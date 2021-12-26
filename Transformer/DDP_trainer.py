@@ -111,7 +111,7 @@ class Trainer:
 
             losses = []
             scaler = GradScaler()
-            for it, (x, y) in enumerate(loader):
+            for it, (x, y, z) in enumerate(loader):
 
                 # place data on the correct device
                 x = x.to(self.device)

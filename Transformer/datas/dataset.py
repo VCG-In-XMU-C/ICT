@@ -10,6 +10,7 @@ import random
 import sys
 sys.path.append('..')
 from utils.util import generate_stroke_mask
+import torchvision.transforms as transforms
 
 
 # TODO: Add random crop and random flip [√]
@@ -18,9 +19,7 @@ def read_img(img_url, image_size, is_train):
 
     if random.random() > 0.5 and is_train:
         img = img.transpose(Image.FLIP_LEFT_RIGHT)
-
-    img = img.resize((image_size, image_size), resample=Image.BILINEAR)
-    return np.array(img)
+    return img
 
 
 # TODO: mask data augmentation
@@ -47,6 +46,13 @@ class FaceScapeDataset(Dataset):
 
         self.block_num = 16
 
+        self.gray_transforms = transforms.Compose([
+            transforms.Resize((image_size, image_size), Image.BILINEAR),
+            transforms.Grayscale(),
+            transforms.ToTensor(),
+        ])
+        self.normalize = transforms.Normalize((0.5,), (0.5,))
+
         print("# Mask is %d, # Image is %d" % (self.mask_num, len(self.image_id_list)))
         
     def __len__(self):
@@ -58,17 +64,16 @@ class FaceScapeDataset(Dataset):
             selected_mask_name = random.sample(self.mask_list, 1)[0]
         else:
             selected_mask_name = self.mask_list[idx % self.mask_num]
-        
-        if not self.random_stroke:
-            selected_mask_dir = os.path.join(self.mask_dir, selected_mask_name)
-            # selected_mask_dir=selected_mask_name
-            mask = Image.open(selected_mask_dir).convert("L")
-        else:
-            mask = generate_stroke_mask([256, 256])
-            mask = (mask > 0).astype(np.uint8) * 255
-            mask = Image.fromarray(mask).convert("L")
-        
-        mask = mask.resize((self.image_size, self.image_size), resample=Image.NEAREST)
+
+        # if not self.random_stroke:
+        selected_mask_dir = os.path.join(self.mask_dir, selected_mask_name)
+        # selected_mask_dir=selected_mask_name
+        mask = Image.open(selected_mask_dir).convert("L")
+
+        # else:
+        #     mask = generate_stroke_mask([256, 256])
+            # mask = (mask > 0).astype(np.uint8) * 255
+            # mask = Image.fromarray(mask).convert("L")
 
         if self.is_train:
             if random.random() > 0.5:
@@ -76,17 +81,27 @@ class FaceScapeDataset(Dataset):
             if random.random() > 0.5:
                 mask = mask.transpose(Image.FLIP_TOP_BOTTOM)
 
-        mask = torch.from_numpy(np.array(mask)).view(-1)
-        mask = (mask/255.) > 0.5
-        mask = mask.float()
+        mask = self.gray_transforms(mask)
+
+        mask[mask > 0.99] = 1
+        mask[mask != 1] = 0
+
+        # # mask = torch.from_numpy(np.array(mask)).view(-1)
+        # mask = torch.from_numpy(np.array(mask))
+        # mask = (mask/255.) > 0.5
+        # mask = mask.float()
 
         selected_img_name = self.image_id_list[idx]
         selected_img_url = os.path.join(self.pt_dataset, selected_img_name)
-        x = read_img(selected_img_url, image_size=self.image_size, is_train=self.is_train)
-        
-        x = torch.from_numpy(np.array(x)).view(-1).float()  # flatten out all pixels
+        image = read_img(selected_img_url, image_size=self.image_size, is_train=self.is_train)
+
+        image = self.gray_transforms(image)
+        image = self.normalize(image)
+        masked = mask * image
+
+        # x = torch.from_numpy(np.array(x)).view(-1).float()  # flatten out all pixels
         # perm用于重排序，比如用一个倒序的列表就可以把data倒序掉，用这个写法可以很easy完成序列中的顺序调换
         # a[0]：取a序列的第一个元素，a[[0,1]]，按顺序取a序列的第1，2个元素
         # x = x[self.perm].float() # reshuffle pixels with any fixed permutation and -> float
 
-        return x[:], mask[:]
+        return masked, image, mask
