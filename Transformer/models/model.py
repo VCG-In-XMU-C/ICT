@@ -26,7 +26,7 @@ class GPT1Config(GPTConfig):
     n_layer = 12
     n_head = 12
     # n_embd = 768
-    n_embd = 4096
+    n_embd = 512
 
 
 class CausalSelfAttention(nn.Module):
