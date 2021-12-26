@@ -159,7 +159,7 @@ class GPT(nn.Module):
 
         self.criterionL1 = torch.nn.L1Loss()
 
-        logger.info("number of parameters: %e", sum(p.numel() for p in self.parameters()))
+        logger.info("number of parameters: %e GB", sum(p.numel() for p in self.parameters())/1024/1024/1024)
 
     def get_block_size(self):
         return self.block_size
