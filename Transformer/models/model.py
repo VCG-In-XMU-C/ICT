@@ -226,9 +226,14 @@ class GPT(nn.Module):
         # shape of input image: b, 1, 256, 256
         device = input_image.device
         data = rearrange(input_image, 'b 1 (h p1) (w p2) -> (b h w) (p1 p2)', p1=64, p2=64)
+        target_emb = rearrange(targets, 'b 1 (h p1) (w p2) -> (b h w) (p1 p2)', p1=64, p2=64)
         # shape of data: b * 16, 4096
         data = torch.from_numpy(self.pca_model.transform(data.cpu())).to(device)
+        target_emb = torch.from_numpy(self.pca_model.transform(target_emb.cpu())).to(device)
+        target_emb = target_emb.type(torch.float32)
+        data = data.type(torch.float32)
         # shape of coffs: b * 16, 512
+        target_emb = rearrange(target_emb, '(b n) p -> b n p', n=16)
         data = rearrange(data, '(b n) p -> b n p', n=16)
 
         b, t, s = data.size()
@@ -251,15 +256,15 @@ class GPT(nn.Module):
         x = self.drop(token_embeddings + position_embeddings)
         x = self.blocks(x)
         x = self.ln_f(x)
-        print(type(x))
         logits = self.head(x)
         # shape of logits: b, 16, 512
-        logits = rearrange(logits, 'b 16 512 -> (b 16) 512')
-        logits = rearrange(logits, 'b n p -> (b n) p', n=16)
+        # logits = rearrange(logits, 'b 16 512 -> (b 16) 512')
+        fake = rearrange(logits, 'b n p -> (b n) p', n=16)
         # shape of logits: b * 16, 512
-        logits = torch.from_numpy(self.pca_model.inverse_transform(logits.cpu())).to(device)
+        fake = torch.from_numpy(self.pca_model.inverse_transform(fake.detach().cpu())).to(device)
+        fake = fake.type(torch.float32)
         # shape of logits: b * 16, 4096
-        fake = rearrange(logits, '(b h w) (p1 p2) -> b 1 (h p1) (w p2)', w=4, h=4, p1=64)
+        fake = rearrange(fake, '(b h w) (p1 p2) -> b 1 (h p1) (w p2)', w=4, h=4, p1=64)
 
         # if we are given some desired targets also calculate the loss
         loss = None
@@ -280,6 +285,6 @@ class GPT(nn.Module):
             #         loss = torch.sum(loss) / torch.sum(masks)
             # else:
             # loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
-            loss = self.criterionL1(fake, targets)
+            loss = self.criterionL1(logits, target_emb)
 
         return fake, loss
