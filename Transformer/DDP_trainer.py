@@ -7,6 +7,7 @@ import numpy as np
 import os
 import time
 
+from utils import util
 import torch
 import torch.optim as optim
 from torch.optim.lr_scheduler import LambdaLR
@@ -176,6 +177,14 @@ class Trainer:
                         lr = config.learning_rate
 
                     if it % self.config.print_freq == 0:
+                        im_fake = util.tensor2im(fake)
+                        im_x = util.tensor2im(x)
+                        im_y = util.tensor2im(y)
+                        im_z = util.tensor2im(z)
+                        util.save_image(im_fake, './im_fake.png', aspect_ratio=1)
+                        util.save_image(im_x, './im_input.png', aspect_ratio=1)
+                        util.save_image(im_y, './im_gt.png', aspect_ratio=1)
+                        util.save_image(im_z, './im_mask.png', aspect_ratio=1)
                         print(f"epoch {epoch+1} iter {it}: train loss {loss.item():.5f}. lr {lr:e}")
 
             if not is_train:
