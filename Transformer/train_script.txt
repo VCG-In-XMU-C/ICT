@@ -1,0 +1,2 @@
+demo -- demo version
+python main.py --name demo --BERT False
