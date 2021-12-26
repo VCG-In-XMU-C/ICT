@@ -72,7 +72,7 @@ if __name__ == '__main__':
     parser.add_argument('--mask_path', type=str, default='D:\\Data\\FaceScape_dist_list\\masks\\')
     parser.add_argument('--BERT', action='store_true', help='Use bert objective to train')
     parser.add_argument('--ImageNet', action='store_true', help='Training with ImageNet')
-    parser.add_argument('--batch_size', type=int, default=4, help='16*8 maybe suitable for V100')
+    parser.add_argument('--batch_size', type=int, default=2, help='16*8 maybe suitable for V100')
     parser.add_argument('--train_epoch', type=int, default=80, help='how many epochs')
     parser.add_argument('--print_freq', type=int, default=200, help='While training, the freq of printing log')
 
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     # Define the size of transformer
     parser.add_argument('--n_layer', type=int, default=12)
     parser.add_argument('--n_head', type=int, default=8)
-    parser.add_argument('--n_embd', type=int, default=512)
+    parser.add_argument('--n_embd', type=int, default=4096)
     parser.add_argument('--lr', type=float, default=3e-4)
     parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
 
@@ -104,6 +104,9 @@ if __name__ == '__main__':
     parser.add_argument('--resume_ckpt', type=str, default='latest.pth', help='start from where, the default is latest')
 
     opts = parser.parse_args()
+
+    opts.BERT = False
+
     opts.ckpt_path = os.path.join(opts.ckpt_path, opts.name)
     opts.resume_ckpt = os.path.join(opts.ckpt_path, opts.resume_ckpt)
     os.makedirs(opts.ckpt_path, exist_ok=True)

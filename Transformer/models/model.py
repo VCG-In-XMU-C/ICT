@@ -4,6 +4,7 @@ import logging
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+from einops import rearrange
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class GPT1Config(GPTConfig):
     n_layer = 12
     n_head = 12
     # n_embd = 768
-    n_embd = 512
+    n_embd = 4096
 
 
 class CausalSelfAttention(nn.Module):
@@ -214,9 +215,13 @@ class GPT(nn.Module):
         optimizer = torch.optim.AdamW(optim_groups, lr=train_config.learning_rate, betas=train_config.betas)
         return optimizer
 
-    def forward(self, data, targets=None, masks=None):
-        print(data.shape)
-        print(targets.shape)
+    def forward(self, input_image, targets=None, masks=None):
+        # print(input_image.shape)
+        # print(targets.shape)
+        # shape of input image: b, 1, 256, 256
+        data = rearrange(input_image, 'b 1 (h p1) (w p2) -> b (h w) (p1 p2)', p1=64, p2=64)
+        # shape of data: b, 16, 4096
+
         b, t, s = data.size()
         # assert t <= self.block_size, "Cannot forward, model block size is exhausted."
 
@@ -238,6 +243,8 @@ class GPT(nn.Module):
         x = self.blocks(x)
         x = self.ln_f(x)
         logits = self.head(x)
+        # shape of logits: b, 16, 4096
+        fake = rearrange(logits, 'b (h w) (p1 p2) -> b (h p1) (w p2)', h=4, p1=64)
 
         # if we are given some desired targets also calculate the loss
         loss = None
@@ -258,6 +265,6 @@ class GPT(nn.Module):
             #         loss = torch.sum(loss) / torch.sum(masks)
             # else:
             # loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
-            loss = self.criterionL1(logits, targets)
+            loss = self.criterionL1(fake, targets)
 
-        return logits, loss
+        return fake, loss
