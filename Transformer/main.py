@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
-    parser.add_argument('--gpus', type=str, default='0,1')
+    parser.add_argument('--gpus', type=str, default=[0, 1])
     parser.add_argument('--gpu', type=str, default='cuda:0')
     parser.add_argument('--ckpt_path', type=str, default='./ckpt')
     parser.add_argument('--data_path', type=str, default='D:\\Data\\FaceScape_dist_list\\train\\',

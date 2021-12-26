@@ -195,7 +195,7 @@ class Trainer:
             if epoch == previous_epoch + 1:
                 print("Resume from Epoch %d" % (epoch))
 
-            self.train_dataset.set_epoch(epoch)  # Shuffle each epoch
+            # self.train_dataset.set_epoch(epoch)  # Shuffle each epoch
 
             epoch_start = time.time()
             run_epoch('train')
