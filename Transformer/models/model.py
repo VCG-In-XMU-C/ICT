@@ -5,6 +5,8 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from einops import rearrange
+import joblib
+
 
 logger = logging.getLogger(__name__)
 
@@ -159,7 +161,10 @@ class GPT(nn.Module):
 
         self.criterionL1 = torch.nn.L1Loss()
 
-        logger.info("number of parameters: %e GB", sum(p.numel() for p in self.parameters())/1024/1024/1024)
+        NUM_PCA_COMPONENTS = 512
+        self.pca_model = joblib.load('.\\pca_%d.m' % NUM_PCA_COMPONENTS)  # load trained pca model
+
+        logger.info("number of parameters: %f MB", sum(p.numel() for p in self.parameters())/1024/1024)
 
     def get_block_size(self):
         return self.block_size
@@ -219,8 +224,12 @@ class GPT(nn.Module):
         # print(input_image.shape)
         # print(targets.shape)
         # shape of input image: b, 1, 256, 256
-        data = rearrange(input_image, 'b 1 (h p1) (w p2) -> b (h w) (p1 p2)', p1=64, p2=64)
-        # shape of data: b, 16, 4096
+        device = input_image.device
+        data = rearrange(input_image, 'b 1 (h p1) (w p2) -> (b h w) (p1 p2)', p1=64, p2=64)
+        # shape of data: b * 16, 4096
+        data = torch.from_numpy(self.pca_model.transform(data.cpu())).to(device)
+        # shape of coffs: b * 16, 512
+        data = rearrange(data, '(b n) p -> b n p', n=16)
 
         b, t, s = data.size()
         # assert t <= self.block_size, "Cannot forward, model block size is exhausted."
@@ -242,9 +251,15 @@ class GPT(nn.Module):
         x = self.drop(token_embeddings + position_embeddings)
         x = self.blocks(x)
         x = self.ln_f(x)
+        print(type(x))
         logits = self.head(x)
-        # shape of logits: b, 16, 4096
-        fake = rearrange(logits, 'b (h w) (p1 p2) -> b (h p1) (w p2)', h=4, p1=64)
+        # shape of logits: b, 16, 512
+        logits = rearrange(logits, 'b 16 512 -> (b 16) 512')
+        logits = rearrange(logits, 'b n p -> (b n) p', n=16)
+        # shape of logits: b * 16, 512
+        logits = torch.from_numpy(self.pca_model.inverse_transform(logits.cpu())).to(device)
+        # shape of logits: b * 16, 4096
+        fake = rearrange(logits, '(b h w) (p1 p2) -> b 1 (h p1) (w p2)', w=4, h=4, p1=64)
 
         # if we are given some desired targets also calculate the loss
         loss = None
