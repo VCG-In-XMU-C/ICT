@@ -52,9 +52,9 @@ def main_worker(gpu, opts):
                                  learning_rate=opts.lr, betas=(0.9, 0.95),
                                  weight_decay=0, lr_decay=True, warmup_tokens=tokens_per_epoch,
                                  final_tokens=train_epochs*tokens_per_epoch, ckpt_path=opts.ckpt_path,
-                                 num_workers=8, GPU_ids=opts.GPU_ids, BERT=False, world_size=1,
+                                 num_workers=8, GPU_ids=opts.gpu, BERT=False, world_size=1,
                                  AMP=opts.AMP, print_freq=opts.print_freq)
-    trainer = Trainer(IGPT_model, train_dataset, test_dataset, train_config, gpu)
+    trainer = Trainer(IGPT_model, train_dataset, test_dataset, train_config, gpu, opts.gpus)
     loaded_ckpt = trainer.load_checkpoint(opts.resume_ckpt)
     trainer.train(loaded_ckpt)
     print("Finish the training ...")
@@ -64,7 +64,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
-    parser.add_argument('--GPU_ids', type=str, default='0, 1')
+    parser.add_argument('--gpus', type=str, default='0,1')
+    parser.add_argument('--gpu', type=str, default='cuda:0')
     parser.add_argument('--ckpt_path', type=str, default='./ckpt')
     parser.add_argument('--data_path', type=str, default='D:\\Data\\FaceScape_dist_list\\list\\',
                         help='Indicate where is the training set')

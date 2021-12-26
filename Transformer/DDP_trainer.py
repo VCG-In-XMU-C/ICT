@@ -43,12 +43,13 @@ class TrainerConfig:
 
 class Trainer:
 
-    def __init__(self, model, train_dataset, test_dataset, config, gpu):
+    def __init__(self, model, train_dataset, test_dataset, config, gpu, gpus):
         self.model = model
         self.train_dataset = train_dataset
         self.test_dataset = test_dataset
         self.config = config
         self.device = gpu
+        self.gpus = gpus
 
         self.model = model.cuda(gpu)
 
@@ -94,7 +95,7 @@ class Trainer:
 
         # model = DDP(self.model,device_ids=[self.global_rank],output_device=self.global_rank,broadcast_buffers=True)
         # model = DDP(self.model, device_ids=[self.device])
-        model = torch.nn.DataParallel(self.model, device_ids=[self.device])
+        model = torch.nn.DataParallel(self.model, device_ids=[self.gpus])
 
         # TODO: Use different seeds to initialize each worker. (This issue is caused by the bug of pytorch itself)
         train_loader = DataLoader(self.train_dataset, shuffle=False, pin_memory=True,
