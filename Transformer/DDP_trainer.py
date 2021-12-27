@@ -140,6 +140,7 @@ class Trainer:
 
                 if is_train:
 
+                    warm_up = True
                     # backprop and update the parameters
                     model.zero_grad()
 
@@ -166,6 +167,7 @@ class Trainer:
                             # linear warmup
                             lr_mult = float(self.tokens) / float(max(1, config.warmup_tokens))
                         else:
+                            warm_up = False
                             # cosine learning rate decay
                             progress = float(self.tokens - config.warmup_tokens) / float(
                                 max(1, config.final_tokens - config.warmup_tokens))
@@ -185,7 +187,7 @@ class Trainer:
                         util.save_image(im_x, './im_input.png', aspect_ratio=1)
                         util.save_image(im_y, './im_gt.png', aspect_ratio=1)
                         util.save_image(im_z, './im_mask.png', aspect_ratio=1)
-                        print(f"epoch {epoch+1} iter {it}: train loss {loss.item():.5f}. lr {lr:e}")
+                        print(f"epoch {epoch+1} iter {it}: train loss {loss.item():.5f}. lr {lr:e} warm up {warm_up}")
 
             if not is_train:
                 test_loss = float(np.mean(losses))
