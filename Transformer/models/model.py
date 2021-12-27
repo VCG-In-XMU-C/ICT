@@ -227,23 +227,23 @@ class GPT(nn.Module):
         data = rearrange(input_image, 'b 1 (h p1) (w p2) -> (b h w) (p1 p2)', p1=64, p2=64)
 
         data = torch.mm(data - self.pca_mean, self.pca_inverse)
-        data = rearrange(data, '(b n) p -> b n p', n=16)
-
-        b, t, s = data.size()
+        # data = rearrange(data, '(b n) p -> b n p', n=16)
+        #
+        # b, t, s = data.size()
         token_embeddings = self.tok_emb(data) # each index maps to a (learnable) vector
-
-        sos = torch.ones(b, 1, self.config.n_embd, device=data.device) * self.sos
-        token_embeddings = torch.cat([sos, token_embeddings[:, :-1, :]], axis=1)
-
-        position_embeddings = self.pos_emb[:, :t, :]  # each position maps to a (learnable) vector
-
-        x = self.drop(token_embeddings + position_embeddings)
-        x = self.blocks(x)
-        x = self.ln_f(x)
-        logits = self.head(x)
-
-        fake = rearrange(logits, 'b n p -> (b n) p', n=16)
-        fake = torch.mm(fake, self.pca_components) + self.pca_mean
+        #
+        # sos = torch.ones(b, 1, self.config.n_embd, device=data.device) * self.sos
+        # token_embeddings = torch.cat([sos, token_embeddings[:, :-1, :]], axis=1)
+        #
+        # position_embeddings = self.pos_emb[:, :t, :]  # each position maps to a (learnable) vector
+        #
+        # x = self.drop(token_embeddings + position_embeddings)
+        # x = self.blocks(x)
+        # x = self.ln_f(x)
+        # logits = self.head(x)
+        #
+        # fake = rearrange(logits, 'b n p -> (b n) p', n=16)
+        fake = torch.mm(token_embeddings, self.pca_components) + self.pca_mean
         fake = rearrange(fake, '(b h w) (p1 p2) -> b 1 (h p1) (w p2)', w=4, h=4, p1=64)
 
         loss = None

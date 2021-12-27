@@ -9,3 +9,6 @@ python main.py --name torch_1024
 
 equal_test -- test equal f(G)
 python main.py --name equal_test
+
+equal_test1 -- test equal1 f
+python main.py --name equal_test1
