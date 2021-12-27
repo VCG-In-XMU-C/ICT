@@ -124,17 +124,17 @@ class Trainer:
                     with autocast():
                         with torch.set_grad_enabled(is_train):
                             if self.config.BERT:
-                                fake, loss = model(x, x, y)
+                                fake, loss = model(y, y, y)
                             else:
-                                fake, loss = model(x, y)
+                                fake, loss = model(y, y)
                             loss = loss.mean()  # collapse all losses if they are scattered on multiple gpus
                             losses.append(loss.item())
                 else:
                     with torch.set_grad_enabled(is_train):
                         if self.config.BERT:
-                            fake, loss = model(x, x, y)
+                            fake, loss = model(y, y, y)
                         else:
-                            fake, loss = model(x, y)
+                            fake, loss = model(y, y)
                         loss = loss.mean()  # collapse all losses if they are scattered on multiple gpus
                         losses.append(loss.item())
 

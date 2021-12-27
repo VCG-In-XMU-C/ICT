@@ -6,3 +6,6 @@ python inference.py --name pca_1024
 
 torch_1024 -- 1024 torch pca version
 python inference.py --name torch_1024
+
+equal_test -- test equal f
+python inference.py --name equal_test
