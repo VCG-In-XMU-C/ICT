@@ -1,0 +1,2 @@
+demo -- demo version
+python inference.py --name demo
