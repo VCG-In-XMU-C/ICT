@@ -72,7 +72,7 @@ if __name__ == '__main__':
     parser.add_argument('--mask_path', type=str, default='D:\\Data\\FaceScape_dist_list\\masks\\')
     parser.add_argument('--BERT', action='store_true', help='Use bert objective to train')
     parser.add_argument('--ImageNet', action='store_true', help='Training with ImageNet')
-    parser.add_argument('--batch_size', type=int, default=64, help='16*8 maybe suitable for V100')
+    parser.add_argument('--batch_size', type=int, default=1, help='16*8 maybe suitable for V100')
     parser.add_argument('--train_epoch', type=int, default=80, help='how many epochs')
     parser.add_argument('--print_freq', type=int, default=200, help='While training, the freq of printing log')
 
