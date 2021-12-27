@@ -224,35 +224,14 @@ class GPT(nn.Module):
         return optimizer
 
     def forward(self, input_image, targets=None, masks=None):
-        # print(input_image.shape)
-        # print(targets.shape)
-        # shape of input image: b, 1, 256, 256
-        device = input_image.device
         data = rearrange(input_image, 'b 1 (h p1) (w p2) -> (b h w) (p1 p2)', p1=64, p2=64)
-        target_emb = rearrange(targets, 'b 1 (h p1) (w p2) -> (b h w) (p1 p2)', p1=64, p2=64)
-        # shape of data: b * 16, 4096
 
         data = torch.mm(data - self.pca_mean, self.pca_inverse)
-        # data = torch.from_numpy(self.pca_model.transform(data.cpu())).to(device)
-        # target_emb = torch.from_numpy(self.pca_model.transform(target_emb.cpu())).to(device)
-        # target_emb = target_emb.type(torch.float32)
-        # data = data.type(torch.float32)
-        # shape of coffs: b * 16, 512
-        # target_emb = rearrange(target_emb, '(b n) p -> b n p', n=16)
         data = rearrange(data, '(b n) p -> b n p', n=16)
 
         b, t, s = data.size()
-        # assert t <= self.block_size, "Cannot forward, model block size is exhausted."
-
-        # forward the GPT model
         token_embeddings = self.tok_emb(data) # each index maps to a (learnable) vector
-        # token_embeddings = torch.cat([sos, token_embeddings[:, :-1, :]], axis=1)
 
-        # if self.config.BERT:
-        #     masks = masks.unsqueeze(2)
-        #     token_embeddings = token_embeddings* (1 - masks)
-        # else:
-        # sos: start of sentence
         sos = torch.ones(b, 1, self.config.n_embd, device=data.device) * self.sos
         token_embeddings = torch.cat([sos, token_embeddings[:, :-1, :]], axis=1)
 
@@ -262,35 +241,13 @@ class GPT(nn.Module):
         x = self.blocks(x)
         x = self.ln_f(x)
         logits = self.head(x)
-        # shape of logits: b, 16, 512
-        # logits = rearrange(logits, 'b 16 512 -> (b 16) 512')
+
         fake = rearrange(logits, 'b n p -> (b n) p', n=16)
-        # shape of logits: b * 16, 512
         fake = torch.mm(fake, self.pca_components) + self.pca_mean
-        # fake = torch.from_numpy(self.pca_model.inverse_transform(fake.detach().cpu())).to(device)
-        # fake = fake.type(torch.float32)
-        # shape of logits: b * 16, 4096
         fake = rearrange(fake, '(b h w) (p1 p2) -> b 1 (h p1) (w p2)', w=4, h=4, p1=64)
 
-        # if we are given some desired targets also calculate the loss
         loss = None
         if targets is not None:
-            # if self.config.BERT:
-            #     loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),reduce=False)
-            #
-            #     # if torch.isnan(loss).any():
-            #     #     print("###########Warning, this iteration appears NAN###########")
-            #     #     print(idx)
-            #     #     print(targets)
-            #     #     print("#######################################################")
-            #     masks = masks.view(-1)
-            #     loss *= masks
-            #     if not self.config.dynamic_weight:
-            #         loss = torch.mean(loss)
-            #     else:
-            #         loss = torch.sum(loss) / torch.sum(masks)
-            # else:
-            # loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
             loss = self.criterionL1(fake, targets)
 
         return fake, loss
