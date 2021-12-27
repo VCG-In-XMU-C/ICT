@@ -1,2 +1,5 @@
 demo -- demo version
 python inference.py --name demo
+
+1024 -- 1024 version
+python inference.py --name pca_1024

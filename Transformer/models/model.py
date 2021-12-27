@@ -28,7 +28,7 @@ class GPT1Config(GPTConfig):
     n_layer = 12
     n_head = 12
     # n_embd = 768
-    n_embd = 512
+    n_embd = 1024
 
 
 class CausalSelfAttention(nn.Module):
@@ -161,7 +161,7 @@ class GPT(nn.Module):
 
         self.criterionL1 = torch.nn.L1Loss()
 
-        NUM_PCA_COMPONENTS = 512
+        NUM_PCA_COMPONENTS = 1024
         self.pca_model = joblib.load('.\\pca_%d.m' % NUM_PCA_COMPONENTS)  # load trained pca model
 
         logger.info("number of parameters: %f MB", sum(p.numel() for p in self.parameters())/1024/1024)

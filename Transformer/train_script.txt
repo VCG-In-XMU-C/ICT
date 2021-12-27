@@ -1,2 +1,5 @@
 demo -- demo version
 python main.py --name demo
+
+1024 -- 1024 version
+python main.py --name pca_1024

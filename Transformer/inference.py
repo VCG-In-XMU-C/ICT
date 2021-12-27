@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--n_layer', type=int, default=12)
     parser.add_argument('--n_head', type=int, default=8)
-    parser.add_argument('--n_embd', type=int, default=512)
+    parser.add_argument('--n_embd', type=int, default=1024)
     parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
 
     parser.add_argument('--save_url', type=str, default='./results/', help='save the output results')
