@@ -163,6 +163,9 @@ class GPT(nn.Module):
 
         NUM_PCA_COMPONENTS = 1024
         self.pca_model = joblib.load('.\\pca_%d.m' % NUM_PCA_COMPONENTS)  # load trained pca model
+        self.pca_components = torch.from_numpy(self.pca_model.components_).cuda()
+        self.pca_mean = torch.from_numpy(self.pca_model.mean_).cuda()
+        self.pca_inverse = self.pca_components.T.cuda()
 
         logger.info("number of parameters: %f MB", sum(p.numel() for p in self.parameters())/1024/1024)
 
@@ -228,12 +231,14 @@ class GPT(nn.Module):
         data = rearrange(input_image, 'b 1 (h p1) (w p2) -> (b h w) (p1 p2)', p1=64, p2=64)
         target_emb = rearrange(targets, 'b 1 (h p1) (w p2) -> (b h w) (p1 p2)', p1=64, p2=64)
         # shape of data: b * 16, 4096
-        data = torch.from_numpy(self.pca_model.transform(data.cpu())).to(device)
-        target_emb = torch.from_numpy(self.pca_model.transform(target_emb.cpu())).to(device)
-        target_emb = target_emb.type(torch.float32)
-        data = data.type(torch.float32)
+
+        data = torch.mm(data - self.pca_mean, self.pca_inverse)
+        # data = torch.from_numpy(self.pca_model.transform(data.cpu())).to(device)
+        # target_emb = torch.from_numpy(self.pca_model.transform(target_emb.cpu())).to(device)
+        # target_emb = target_emb.type(torch.float32)
+        # data = data.type(torch.float32)
         # shape of coffs: b * 16, 512
-        target_emb = rearrange(target_emb, '(b n) p -> b n p', n=16)
+        # target_emb = rearrange(target_emb, '(b n) p -> b n p', n=16)
         data = rearrange(data, '(b n) p -> b n p', n=16)
 
         b, t, s = data.size()
@@ -261,8 +266,9 @@ class GPT(nn.Module):
         # logits = rearrange(logits, 'b 16 512 -> (b 16) 512')
         fake = rearrange(logits, 'b n p -> (b n) p', n=16)
         # shape of logits: b * 16, 512
-        fake = torch.from_numpy(self.pca_model.inverse_transform(fake.detach().cpu())).to(device)
-        fake = fake.type(torch.float32)
+        fake = torch.mm(fake, self.pca_components) + self.pca_mean
+        # fake = torch.from_numpy(self.pca_model.inverse_transform(fake.detach().cpu())).to(device)
+        # fake = fake.type(torch.float32)
         # shape of logits: b * 16, 4096
         fake = rearrange(fake, '(b h w) (p1 p2) -> b 1 (h p1) (w p2)', w=4, h=4, p1=64)
 
@@ -285,6 +291,6 @@ class GPT(nn.Module):
             #         loss = torch.sum(loss) / torch.sum(masks)
             # else:
             # loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
-            loss = self.criterionL1(logits, target_emb)
+            loss = self.criterionL1(fake, targets)
 
         return fake, loss

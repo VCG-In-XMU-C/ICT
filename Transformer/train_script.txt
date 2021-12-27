@@ -3,3 +3,6 @@ python main.py --name demo
 
 1024 -- 1024 version
 python main.py --name pca_1024
+
+torch_1024 -- 1024 torch pca version
+python main.py --name torch_1024
