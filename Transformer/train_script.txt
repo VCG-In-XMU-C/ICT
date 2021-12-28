@@ -12,3 +12,6 @@ python main.py --name equal_test
 
 equal_test1 -- test equal1 f
 python main.py --name equal_test1
+
+equal_test2 -- remove mask
+python main.py --name equal_test2
