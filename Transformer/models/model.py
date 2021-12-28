@@ -28,7 +28,7 @@ class GPT1Config(GPTConfig):
     n_layer = 12
     n_head = 12
     # n_embd = 768
-    n_embd = 1024
+    n_embd = 2048
 
 
 class CausalSelfAttention(nn.Module):
@@ -46,8 +46,8 @@ class CausalSelfAttention(nn.Module):
         # output projection
         self.proj = nn.Linear(config.n_embd, config.n_embd)
 
-        self.register_buffer("mask", torch.tril(torch.ones(config.block_size, config.block_size))
-                             .view(1, 1, config.block_size, config.block_size))
+        # self.register_buffer("mask", torch.tril(torch.ones(config.block_size, config.block_size))
+        #                      .view(1, 1, config.block_size, config.block_size))
         self.n_head = config.n_head
 
         self.config=config
@@ -63,8 +63,8 @@ class CausalSelfAttention(nn.Module):
         # causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
         att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
 
-        if not self.config.BERT:
-            att = att.masked_fill(self.mask[:,:,:T,:T] == 0, float('-inf'))
+        # if not self.config.BERT:
+        #     att = att.masked_fill(self.mask[:,:,:T,:T] == 0, float('-inf'))
         
         att = F.softmax(att, dim=-1)
         att = self.attn_drop(att)
@@ -137,12 +137,14 @@ class GPT(nn.Module):
         # 2. The learning of extra embedding, which is used to inner product to generate the final probability [x]
 
         # Start token
-        if not config.BERT:
-            self.sos = torch.nn.Parameter(torch.zeros(config.n_embd))
-            nn.init.normal_(self.sos)
+        # if not config.BERT:
+        #     self.sos = torch.nn.Parameter(torch.zeros(config.n_embd))
+        #     nn.init.normal_(self.sos)
+
+        self.NUM_PCA_COMPONENTS = 512
 
         # input embedding stem
-        self.tok_emb = nn.Linear(config.n_embd, config.n_embd, bias=False)
+        self.tok_emb = nn.Linear(self.NUM_PCA_COMPONENTS, config.n_embd, bias=False)
         self.pos_emb = nn.Parameter(torch.zeros(1, config.block_size, config.n_embd))
         self.drop = nn.Dropout(config.embd_pdrop)
         # transformer
@@ -152,7 +154,7 @@ class GPT(nn.Module):
             self.blocks = nn.Sequential(*[Block(config) for _ in range(config.n_layer)])
         # decoder head
         self.ln_f = nn.LayerNorm(config.n_embd)
-        self.head = nn.Linear(config.n_embd, config.n_embd, bias=False)
+        self.head = nn.Linear(config.n_embd, self.NUM_PCA_COMPONENTS, bias=False)
 
         self.block_size = config.block_size
         self.config = config
@@ -161,8 +163,8 @@ class GPT(nn.Module):
 
         self.criterionL1 = torch.nn.L1Loss()
 
-        NUM_PCA_COMPONENTS = 1024
-        self.pca_model = joblib.load('.\\pca_%d.m' % NUM_PCA_COMPONENTS)  # load trained pca model
+
+        self.pca_model = joblib.load('.\\pca_%d.m' % self.NUM_PCA_COMPONENTS)  # load trained pca model
         self.pca_components = torch.from_numpy(self.pca_model.components_).cuda()
         self.pca_mean = torch.from_numpy(self.pca_model.mean_).cuda()
         self.pca_inverse = self.pca_components.T.cuda()
@@ -204,8 +206,8 @@ class GPT(nn.Module):
 
         # special case the position embedding parameter in the root GPT module as not decayed
         no_decay.add('pos_emb')
-        if not self.config.BERT:
-            no_decay.add('sos')
+        # if not self.config.BERT:
+        #     no_decay.add('sos')
 
         # validate that we considered every parameter
         param_dict = {pn: p for pn, p in self.named_parameters()}
@@ -227,9 +229,9 @@ class GPT(nn.Module):
         # print(input_image.shape)
         # print(targets.shape)
         # shape of input image: b, 1, 256, 256
-        device = input_image.device
+        # device = input_image.device
         data = rearrange(input_image, 'b 1 (h p1) (w p2) -> (b h w) (p1 p2)', p1=64, p2=64)
-        target_emb = rearrange(targets, 'b 1 (h p1) (w p2) -> (b h w) (p1 p2)', p1=64, p2=64)
+        # target_emb = rearrange(targets, 'b 1 (h p1) (w p2) -> (b h w) (p1 p2)', p1=64, p2=64)
         # shape of data: b * 16, 4096
 
         data = torch.mm(data - self.pca_mean, self.pca_inverse)
@@ -253,8 +255,8 @@ class GPT(nn.Module):
         #     token_embeddings = token_embeddings* (1 - masks)
         # else:
         # sos: start of sentence
-        sos = torch.ones(b, 1, self.config.n_embd, device=data.device) * self.sos
-        token_embeddings = torch.cat([sos, token_embeddings[:, :-1, :]], axis=1)
+        # sos = torch.ones(b, 1, self.config.n_embd, device=data.device) * self.sos
+        # token_embeddings = torch.cat([sos, token_embeddings[:, :-1, :]], axis=1)
 
         position_embeddings = self.pos_emb[:, :t, :]  # each position maps to a (learnable) vector
 
