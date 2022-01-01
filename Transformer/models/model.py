@@ -7,6 +7,7 @@ from torch.nn import functional as F
 
 logger = logging.getLogger(__name__)
 
+
 class GPTConfig:
     """ base GPT config, params common to all GPT versions """
     embd_pdrop = 0.1
@@ -19,11 +20,13 @@ class GPTConfig:
         for k,v in kwargs.items():
             setattr(self, k, v)
 
+
 class GPT1Config(GPTConfig):
     """ GPT-1 like network roughly 125M params """
     n_layer = 12
     n_head = 12
     n_embd = 768
+
 
 class CausalSelfAttention(nn.Module):
 
@@ -40,20 +43,19 @@ class CausalSelfAttention(nn.Module):
         # output projection
         self.proj = nn.Linear(config.n_embd, config.n_embd)
 
-
         self.register_buffer("mask", torch.tril(torch.ones(config.block_size, config.block_size))
-                                     .view(1, 1, config.block_size, config.block_size))
+                             .view(1, 1, config.block_size, config.block_size))
         self.n_head = config.n_head
 
-        self.config=config
+        self.config = config
 
     def forward(self, x, layer_past=None):
         B, T, C = x.size()
 
         # calculate query, key, values for all heads in batch and move head forward to be the batch dim
-        k = self.key(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-        q = self.query(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
-        v = self.value(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2) # (B, nh, T, hs)
+        k = self.key(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)  # (B, nh, T, hs)
+        q = self.query(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)  # (B, nh, T, hs)
+        v = self.value(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)  # (B, nh, T, hs)
 
         # causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
         att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
@@ -64,7 +66,7 @@ class CausalSelfAttention(nn.Module):
         att = F.softmax(att, dim=-1)
         att = self.attn_drop(att)
         y = att @ v # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)
-        y = y.transpose(1, 2).contiguous().view(B, T, C) # re-assemble all head outputs side by side
+        y = y.transpose(1, 2).contiguous().view(B, T, C)  # re-assemble all head outputs side by side
 
         # output projection
         y = self.resid_drop(self.proj(y))
@@ -74,6 +76,7 @@ class CausalSelfAttention(nn.Module):
 class GELU2(nn.Module):
     def __init__(self):
         super().__init__()
+
     def forward(self, x):
         return x * F.sigmoid(1.702 * x)
 
@@ -98,6 +101,7 @@ class Block_2(nn.Module):
         x = x + self.mlp(self.ln2(x))
         return x
 
+
 class Block(nn.Module):
     """ Transformer block with original GELU """
 
@@ -117,6 +121,7 @@ class Block(nn.Module):
         x = x + self.attn(self.ln1(x))
         x = x + self.mlp(self.ln2(x))
         return x
+
 
 class GPT(nn.Module):
     """  the full GPT language model, with a context size of block_size """
@@ -147,7 +152,7 @@ class GPT(nn.Module):
         self.head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
 
         self.block_size = config.block_size
-        self.config=config
+        self.config = config
 
         self.apply(self._init_weights)
 
@@ -196,8 +201,9 @@ class GPT(nn.Module):
         inter_params = decay & no_decay
         union_params = decay | no_decay
         assert len(inter_params) == 0, "parameters %s made it into both decay/no_decay sets!" % (str(inter_params), )
-        assert len(param_dict.keys() - union_params) == 0, "parameters %s were not separated into either decay/no_decay set!" \
-                                                    % (str(param_dict.keys() - union_params), )
+        assert len(param_dict.keys() - union_params) == 0, \
+            "parameters %s were not separated into either decay/no_decay set!" \
+            % (str(param_dict.keys() - union_params), )
 
         # create the pytorch optimizer object
         optim_groups = [
@@ -209,24 +215,21 @@ class GPT(nn.Module):
 
     def forward(self, idx, targets=None, masks=None):
 
-
         b, t = idx.size()
         assert t <= self.block_size, "Cannot forward, model block size is exhausted."
 
         # forward the GPT model
         token_embeddings = self.tok_emb(idx) # each index maps to a (learnable) vector
-        #token_embeddings = torch.cat([sos, token_embeddings[:, :-1, :]], axis=1)
+        # token_embeddings = torch.cat([sos, token_embeddings[:, :-1, :]], axis=1)
 
         if self.config.BERT:
-            masks=masks.unsqueeze(2)
-            token_embeddings = token_embeddings* (1 - masks)
+            masks = masks.unsqueeze(2)
+            token_embeddings = token_embeddings * (1 - masks)
         else:
             sos = torch.ones(b, 1, self.config.n_embd, device=idx.device) * self.sos
             token_embeddings = torch.cat([sos, token_embeddings[:, :-1, :]], axis=1)
 
-
         position_embeddings = self.pos_emb[:, :t, :] # each position maps to a (learnable) vector
-
 
         x = self.drop(token_embeddings + position_embeddings)
         x = self.blocks(x)
@@ -237,7 +240,7 @@ class GPT(nn.Module):
         loss = None
         if targets is not None:
             if self.config.BERT:
-                loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),reduce=False)
+                loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), reduce=False)
 
                 # if torch.isnan(loss).any():
                 #     print("###########Warning, this iteration appears NAN###########")
