@@ -27,7 +27,7 @@ def main_worker(gpu, opts):
     sys.stdout = Logger(os.path.join(opts.ckpt_path, 'log.txt'))
 
     # TODO: directly use the provided color palette provided by OpenAI. [√]
-    C = np.load('kmeans_centers.npy') ## [0,1]
+    C = np.load('kmeans_centers.npy')  # [0,1]
     C = np.rint(127.5 * (C + 1.0))
     C = torch.from_numpy(C)
 
@@ -52,11 +52,11 @@ def main_worker(gpu, opts):
 
     # By default: 8xV100 GPUs
     # TODO: Modify the ckpt path [√]
-    train_config=TrainerConfig(max_epochs=train_epochs, batch_size=opts.batch_size,
+    train_config = TrainerConfig(max_epochs=train_epochs, batch_size=opts.batch_size,
                                learning_rate=opts.lr, betas=(0.9, 0.95),
-                               weight_decay=0, lr_decay=True,warmup_tokens=tokens_per_epoch/opts.world_size,
-                               final_tokens=train_epochs*tokens_per_epoch/opts.world_size, ckpt_path=opts.ckpt_path,
-                               num_workers=8, GPU_ids=opts.GPU_ids, BERT=opts.BERT, world_size=opts.world_size,
+                               weight_decay=0, lr_decay=True, warmup_tokens=tokens_per_epoch,
+                               final_tokens=train_epochs*tokens_per_epoch, ckpt_path=opts.ckpt_path,
+                               num_workers=8, GPU_ids=opts.GPU_ids, BERT=opts.BERT,
                                AMP=opts.AMP, print_freq=opts.print_freq)
     trainer = Trainer(IGPT_model, train_dataset, test_dataset, train_config, gpu)
     loaded_ckpt = trainer.load_checkpoint(opts.resume_ckpt)
@@ -70,21 +70,22 @@ if __name__=='__main__':
     parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
     parser.add_argument('--GPU_ids', type=str, default='0')
     parser.add_argument('--ckpt_path', type=str, default='./ckpt')
-    parser.add_argument('--data_path', type=str, default='/home/ziyuwan/workspace/data/',
+    parser.add_argument('--data_path', type=str, default='D:\\Data\\FaceScape_dist_list\\train\\',
                         help='Indicate where is the training set')
-    parser.add_argument('--mask_path', type=str, default='/home/ziyuwan/workspace/data/mask')
+    parser.add_argument('--mask_path', type=str, default='D:\\Data\\FaceScape_dist_list\\masks\\')
     parser.add_argument('--BERT', action='store_true', help='Use bert objective to train')
     parser.add_argument('--ImageNet', action='store_true', help='Training with ImageNet')
     parser.add_argument('--batch_size', type=int, default=2*6, help='16*8 maybe suitable for V100')
     parser.add_argument('--train_epoch', type=int, default=80, help='how many epochs')
     parser.add_argument('--print_freq', type=int, default=200, help='While training, the freq of printing log')
 
-    parser.add_argument('--validation_path', type=str, default='', help='where is the validation set of ImageNet')
+    parser.add_argument('--validation_path', type=str, default='D:\\Data\\FaceScape_dist_list\\test\\',
+                        help='where is the validation set of ImageNet')
 
     parser.add_argument('--image_size', type=int, default=32, help='input sequence length = image_size*image_size')
 
     # Define the size of transformer
-    parser.add_argument('--n_layer', type=int, default=14)  # try 12 14
+    parser.add_argument('--n_layer', type=int, default=12)  # try 12 14
     parser.add_argument('--n_head', type=int, default=8)
     parser.add_argument('--n_embd', type=int, default=256)
     parser.add_argument('--lr', type=float, default=3e-4)

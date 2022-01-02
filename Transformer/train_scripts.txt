@@ -1,0 +1,1 @@
+python main.py --name original_32 --BERT --batch_size 1 --train_epoch 100 --GELU_2

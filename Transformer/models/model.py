@@ -238,6 +238,10 @@ class GPT(nn.Module):
 
         # if we are given some desired targets also calculate the loss
         loss = None
+        # (B, 32*32, 512)
+        # (B, 32*32)
+        # print(logits.shape)
+        # print(targets.shape)
         if targets is not None:
             if self.config.BERT:
                 loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), reduce=False)
