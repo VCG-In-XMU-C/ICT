@@ -14,7 +14,7 @@ from utils.util import generate_stroke_mask
 
 ## TODO: Add random crop and random flip [√]
 def read_img(img_url, image_size, is_train):
-    img=Image.open(img_url).convert("RGB")
+    img=Image.open(img_url).convert("L")
 
     x,y=img.size
     if x!=y:
@@ -43,7 +43,7 @@ def getfilelist(path):
 ## TODO: mask data augmentation
 class ImageNetDatasetMask(Dataset):
     
-    def __init__(self, pt_dataset, clusters, perm=None, mask_path=None, is_train=False, use_ImageFolder=False, image_size=32, random_stroke=False):
+    def __init__(self, pt_dataset, perm=None, mask_path=None, is_train=False, use_ImageFolder=False, image_size=32, random_stroke=False):
 
         self.is_train=is_train
         self.pt_dataset = pt_dataset
@@ -61,14 +61,13 @@ class ImageNetDatasetMask(Dataset):
                 self.image_id_list.append(x)
 
         self.random_stroke=random_stroke
-        self.clusters = clusters
         self.perm = torch.arange(image_size*image_size) if perm is None else perm
 
         self.mask_dir=mask_path
         self.mask_list=os.listdir(self.mask_dir)
         self.mask_list=sorted(self.mask_list)
 
-        self.vocab_size = clusters.size(0)
+        self.vocab_size = 256
         #self.block_size = 32*32 - 1
         self.block_size = image_size*image_size
         self.mask_num=len(self.mask_list)
@@ -113,8 +112,6 @@ class ImageNetDatasetMask(Dataset):
         #selected_img_url = os.path.join(self.pt_dataset,selected_img_name)
         x = read_img(selected_img_url,image_size=self.image_size, is_train=self.is_train)
         
-        x = torch.from_numpy(np.array(x)).view(-1, 3) # flatten out all pixels
-        x = x[self.perm].float() # reshuffle pixels with any fixed permutation and -> float
-        a = ((x[:, None, :] - self.clusters[None, :, :])**2).sum(-1).argmin(1) # cluster assignments
+        x = torch.from_numpy(np.array(x)).view(-1).long() # flatten out all pixels
 
-        return a[:], mask[:]
+        return x[:], mask[:]

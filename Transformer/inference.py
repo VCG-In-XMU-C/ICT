@@ -70,11 +70,6 @@ if __name__=='__main__':
 
     IGPT_model.cuda()
 
-    # Load clusters
-    C = np.load('kmeans_centers.npy')  # [0,1]
-    C = np.rint(127.5 * (C + 1.0))
-    C = torch.from_numpy(C)
-
     n_samples = opts.n_samples
 
     img_list = sorted(os.listdir(opts.image_url))
@@ -93,11 +88,9 @@ if __name__=='__main__':
                 #     print("### Something Wrong ###")
 
                 image_url = os.path.join(opts.image_url, x_name)
-                input_image = Image.open(image_url).convert("RGB")
+                input_image = Image.open(image_url).convert("L")
                 x = input_image.resize((opts.image_size, opts.image_size), resample=Image.BILINEAR)
-                x = torch.from_numpy(np.array(x)).view(-1, 3)
-                x = x.float()
-                a = ((x[:, None, :] - C[None, :, :]) ** 2).sum(-1).argmin(1)  # cluster assignments
+                x = torch.from_numpy(np.array(x)).view(-1)
 
                 mask_url = os.path.join(opts.mask_url, y_name)
                 input_mask = Image.open(mask_url).convert("L")
@@ -113,20 +106,18 @@ if __name__=='__main__':
                 mask_url = os.path.join(opts.save_url, opts.name, 'masked')
                 os.makedirs(mask_url, exist_ok=True)
 
-                repeat_y = y.reshape(y.shape[0], 1)
-                repeat_y = repeat_y.repeat(1, 3)
-                masked = x * (1-repeat_y)
-                masked = masked.reshape(32, 32, 3).numpy().astype(np.uint8)
+                masked = x * (1-y)
+                masked = masked.reshape(32, 32).numpy().astype(np.uint8)
                 masked = Image.fromarray(masked)
                 masked.save(os.path.join(mask_url, img_name))
 
                 raw_url = os.path.join(opts.save_url, opts.name, 'raw')
                 os.makedirs(raw_url, exist_ok=True)
-                raw = x.reshape(32, 32, 3).numpy().astype(np.uint8)
+                raw = x.reshape(32, 32).numpy().astype(np.uint8)
                 raw = Image.fromarray(raw)
                 raw.save(os.path.join(raw_url, img_name))
 
-                a_list = [a] * n_samples
+                a_list = [x] * n_samples
                 a_tensor = torch.stack(a_list, dim=0)  # Input images
                 b_list = [y] * n_samples
                 b_tensor = torch.stack(b_list, dim=0)  # Input masks
@@ -144,7 +135,7 @@ if __name__=='__main__':
                 for i in range(n_samples):
                     current_url = os.path.join(opts.save_url, opts.name, 'condition_%d' % (i + 1))
                     os.makedirs(current_url, exist_ok=True)
-                    current_img = C[pixels[i]].view(opts.image_size, opts.image_size, 3).numpy().astype(np.uint8)
+                    current_img = pixels[i].view(opts.image_size, opts.image_size).numpy().astype(np.uint8)
                     tmp = Image.fromarray(current_img)
                     tmp.save(os.path.join(current_url, img_name))
                 print("Finish %s" % img_name)

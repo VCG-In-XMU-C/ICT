@@ -26,16 +26,11 @@ def main_worker(gpu, opts):
     set_seed(42)
     sys.stdout = Logger(os.path.join(opts.ckpt_path, 'log.txt'))
 
-    # TODO: directly use the provided color palette provided by OpenAI. [√]
-    C = np.load('kmeans_centers.npy')  # [0,1]
-    C = np.rint(127.5 * (C + 1.0))
-    C = torch.from_numpy(C)
-
     # Define the dataset
-    train_dataset = ImageNetDatasetMask(opts.data_path, C, mask_path=opts.mask_path, is_train=True,
+    train_dataset = ImageNetDatasetMask(opts.data_path, mask_path=opts.mask_path, is_train=True,
                                         use_ImageFolder=opts.use_ImageFolder, image_size=opts.image_size,
                                         random_stroke=opts.random_stroke)
-    test_dataset = ImageNetDatasetMask(opts.validation_path, C, mask_path=opts.mask_path, is_train=False,
+    test_dataset = ImageNetDatasetMask(opts.validation_path, mask_path=opts.mask_path, is_train=False,
                                        use_ImageFolder=opts.use_ImageFolder, image_size=opts.image_size)
 
     model_config=GPTConfig(train_dataset.vocab_size, train_dataset.block_size,
