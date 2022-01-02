@@ -87,49 +87,61 @@ if __name__=='__main__':
 
     if opts.BERT:
 
-        for x_name, y_name in zip(img_list, mask_list):
+        for x_name in img_list:
+            for y_name in mask_list:
+                # if x_name != y_name:
+                #     print("### Something Wrong ###")
 
-            if x_name != y_name:
-                print("### Something Wrong ###")
+                image_url = os.path.join(opts.image_url, x_name)
+                input_image = Image.open(image_url).convert("RGB")
+                x = input_image.resize((opts.image_size, opts.image_size), resample=Image.BILINEAR)
+                x = torch.from_numpy(np.array(x)).view(-1, 3)
+                x = x.float()
+                a = ((x[:, None, :] - C[None, :, :]) ** 2).sum(-1).argmin(1)  # cluster assignments
 
-            image_url = os.path.join(opts.image_url, x_name)
-            input_image = Image.open(image_url).convert("RGB")
-            x = input_image.resize((opts.image_size, opts.image_size), resample=Image.BILINEAR)
-            x = torch.from_numpy(np.array(x)).view(-1, 3)
-            x = x.float()
-            a = ((x[:, None, :] - C[None, :, :])**2).sum(-1).argmin(1)  # cluster assignments
+                mask_url = os.path.join(opts.mask_url, y_name)
+                input_mask = Image.open(mask_url).convert("L")
+                y = input_mask.resize((opts.image_size, opts.image_size), resample=Image.NEAREST)
+                y = torch.from_numpy(np.array(y) / 255.).view(-1)
+                y = y > 0.5
+                y = y.float()
 
-            mask_url = os.path.join(opts.mask_url, y_name)
-            input_mask = Image.open(mask_url).convert("L")
-            y = input_mask.resize((opts.image_size, opts.image_size), resample=Image.NEAREST)
-            y = torch.from_numpy(np.array(y)/255.).view(-1)
-            y = y > 0.5
-            y = y.float()
+                # shape of x is [32 * 32, 3]
+                # shape of y is [32 * 32]
 
-            a_list = [a]*n_samples
-            a_tensor = torch.stack(a_list, dim=0)  # Input images
-            b_list = [y]*n_samples
-            b_tensor = torch.stack(b_list,dim=0)  # Input masks
-            a_tensor *= (1-b_tensor).long()
+                img_name = x_name[:-4] + y_name[:-4] + '.png'
+                mask_url = os.path.join(opts.save_url, opts.name, 'masked')
+                os.makedirs(mask_url, exist_ok=True)
 
-            if opts.sample_all:
-                pixels = sample_mask_all(IGPT_model, context=a_tensor, length=opts.image_size*opts.image_size,
+                repeat_y = y.reshape(y.shape[0], 1)
+                repeat_y = repeat_y.repeat(1, 3)
+                masked = x * repeat_y
+                masked = masked.reshape(32, 32, 3).numpy().astype(np.uint8)
+                masked = Image.fromarray(masked)
+                masked.save(os.path.join(mask_url, img_name))
+
+                a_list = [a] * n_samples
+                a_tensor = torch.stack(a_list, dim=0)  # Input images
+                b_list = [y] * n_samples
+                b_tensor = torch.stack(b_list, dim=0)  # Input masks
+                a_tensor *= (1 - b_tensor).long()
+
+                if opts.sample_all:
+                    pixels = sample_mask_all(IGPT_model, context=a_tensor, length=opts.image_size * opts.image_size,
+                                             num_sample=n_samples, top_k=opts.top_k, mask=b_tensor,
+                                             no_bar=opts.no_progressive_bar)
+                else:
+                    pixels = sample_mask(IGPT_model, context=a_tensor, length=opts.image_size * opts.image_size,
                                          num_sample=n_samples, top_k=opts.top_k, mask=b_tensor,
                                          no_bar=opts.no_progressive_bar)
-            else:
-                pixels = sample_mask(IGPT_model, context=a_tensor, length=opts.image_size*opts.image_size,
-                                     num_sample=n_samples, top_k=opts.top_k, mask=b_tensor,
-                                     no_bar=opts.no_progressive_bar)
 
-            img_name = x_name[:-4]+'.png'
-            for i in range(n_samples):
+                for i in range(n_samples):
+                    current_url = os.path.join(opts.save_url, opts.name, 'condition_%d' % (i + 1))
+                    os.makedirs(current_url, exist_ok=True)
+                    current_img = C[pixels[i]].view(opts.image_size, opts.image_size, 3).numpy().astype(np.uint8)
+                    tmp = Image.fromarray(current_img)
+                    tmp.save(os.path.join(current_url, img_name))
+                print("Finish %s" % img_name)
 
-                current_url = os.path.join(opts.save_url, opts.name, 'condition_%d' % (i+1))
-                os.makedirs(current_url, exist_ok=True)
-                current_img = C[pixels[i]].view(opts.image_size, opts.image_size, 3).numpy().astype(np.uint8)
-                tmp = Image.fromarray(current_img)
-                tmp.save(os.path.join(current_url, img_name))
-            print("Finish %s" % img_name)
-        
         e_time = time.time()
         print("This test totally costs %.5f seconds" % (e_time-s_time))
