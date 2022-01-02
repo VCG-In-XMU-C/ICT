@@ -22,7 +22,7 @@ if __name__=='__main__':
     parser.add_argument('--GPU_ids', type=str, default='0')
     parser.add_argument('--ckpt_path', type=str, default='./ckpt')
     parser.add_argument('--BERT', action='store_true', help='BERT model, Image Completion')
-    parser.add_argument('--image_url', type=str, default='D:\\Data\\FaceScape_dist_list\\train\\',
+    parser.add_argument('--image_url', type=str, default='D:\\Data\\FaceScape_dist_list\\test\\',
                         help='the folder of image')
     parser.add_argument('--mask_url', type=str, default='D:\\Data\\FaceScape_dist_list\\masks\\',
                         help='the folder of mask')
@@ -115,10 +115,16 @@ if __name__=='__main__':
 
                 repeat_y = y.reshape(y.shape[0], 1)
                 repeat_y = repeat_y.repeat(1, 3)
-                masked = x * repeat_y
+                masked = x * (1-repeat_y)
                 masked = masked.reshape(32, 32, 3).numpy().astype(np.uint8)
                 masked = Image.fromarray(masked)
                 masked.save(os.path.join(mask_url, img_name))
+
+                raw_url = os.path.join(opts.save_url, opts.name, 'raw')
+                os.makedirs(raw_url, exist_ok=True)
+                raw = x.reshape(32, 32, 3).numpy().astype(np.uint8)
+                raw = Image.fromarray(raw)
+                raw.save(os.path.join(raw_url, img_name))
 
                 a_list = [a] * n_samples
                 a_tensor = torch.stack(a_list, dim=0)  # Input images
