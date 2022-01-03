@@ -107,13 +107,13 @@ if __name__=='__main__':
                 os.makedirs(mask_url, exist_ok=True)
 
                 masked = x * (1-y)
-                masked = masked.reshape(32, 32).numpy().astype(np.uint8)
+                masked = masked.reshape(opts.image_size, opts.image_size).numpy().astype(np.uint8)
                 masked = Image.fromarray(masked)
                 masked.save(os.path.join(mask_url, img_name))
 
                 raw_url = os.path.join(opts.save_url, opts.name, 'raw')
                 os.makedirs(raw_url, exist_ok=True)
-                raw = x.reshape(32, 32).numpy().astype(np.uint8)
+                raw = x.reshape(opts.image_size, opts.image_size).numpy().astype(np.uint8)
                 raw = Image.fromarray(raw)
                 raw.save(os.path.join(raw_url, img_name))
 
