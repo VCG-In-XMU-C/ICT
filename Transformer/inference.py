@@ -136,7 +136,7 @@ if __name__=='__main__':
                 for i in range(n_samples):
                     current_url = os.path.join(opts.save_url, opts.name, 'condition_%d' % (i + 1))
                     os.makedirs(current_url, exist_ok=True)
-                    current_img = pixels[i].view(opts.image_size, opts.image_size).numpy().astype(np.uint8)
+                    current_img = pixels[i].view(opts.image_size, opts.image_size).cpu().numpy().astype(np.uint8)
                     tmp = Image.fromarray(current_img)
                     tmp.save(os.path.join(current_url, img_name))
                 print("Finish %s" % img_name)
