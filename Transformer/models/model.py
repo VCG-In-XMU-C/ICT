@@ -26,9 +26,9 @@ class GPTConfig:
 class GPT1Config(GPTConfig):
     """ GPT-1 like network roughly 125M params """
     n_layer = 12
-    n_head = 12
+    n_head = 8
     # n_embd = 768
-    n_embd = 2048
+    n_embd = 32*4
 
 
 class CausalSelfAttention(nn.Module):
@@ -141,7 +141,7 @@ class GPT(nn.Module):
         #     self.sos = torch.nn.Parameter(torch.zeros(config.n_embd))
         #     nn.init.normal_(self.sos)
 
-        self.NUM_PCA_COMPONENTS = 512
+        self.NUM_PCA_COMPONENTS = 32
 
         # input embedding stem
         self.tok_emb = nn.Linear(self.NUM_PCA_COMPONENTS, config.n_embd, bias=False)
@@ -162,7 +162,6 @@ class GPT(nn.Module):
         self.apply(self._init_weights)
 
         self.criterionL1 = torch.nn.L1Loss()
-
 
         self.pca_model = joblib.load('.\\pca_%d.m' % self.NUM_PCA_COMPONENTS)  # load trained pca model
         self.pca_components = torch.from_numpy(self.pca_model.components_).cuda()
@@ -230,7 +229,7 @@ class GPT(nn.Module):
         # print(targets.shape)
         # shape of input image: b, 1, 256, 256
         # device = input_image.device
-        data = rearrange(input_image, 'b 1 (h p1) (w p2) -> (b h w) (p1 p2)', p1=64, p2=64)
+        data = rearrange(input_image, 'b 1 (h p1) (w p2) -> (b h w) (p1 p2)', p1=8, p2=8)
         # target_emb = rearrange(targets, 'b 1 (h p1) (w p2) -> (b h w) (p1 p2)', p1=64, p2=64)
         # shape of data: b * 16, 4096
 
@@ -241,7 +240,7 @@ class GPT(nn.Module):
         # data = data.type(torch.float32)
         # shape of coffs: b * 16, 512
         # target_emb = rearrange(target_emb, '(b n) p -> b n p', n=16)
-        data = rearrange(data, '(b n) p -> b n p', n=16)
+        data = rearrange(data, '(b n) p -> b n p', n=32*32)
 
         b, t, s = data.size()
         # assert t <= self.block_size, "Cannot forward, model block size is exhausted."
@@ -266,13 +265,13 @@ class GPT(nn.Module):
         logits = self.head(x)
         # shape of logits: b, 16, 512
         # logits = rearrange(logits, 'b 16 512 -> (b 16) 512')
-        fake = rearrange(logits, 'b n p -> (b n) p', n=16)
+        fake = rearrange(logits, 'b n p -> (b n) p', n=32*32)
         # shape of logits: b * 16, 512
         fake = torch.mm(fake, self.pca_components) + self.pca_mean
         # fake = torch.from_numpy(self.pca_model.inverse_transform(fake.detach().cpu())).to(device)
         # fake = fake.type(torch.float32)
         # shape of logits: b * 16, 4096
-        fake = rearrange(fake, '(b h w) (p1 p2) -> b 1 (h p1) (w p2)', w=4, h=4, p1=64)
+        fake = rearrange(fake, '(b h w) (p1 p2) -> b 1 (h p1) (w p2)', w=32, h=32, p1=8)
 
         # if we are given some desired targets also calculate the loss
         loss = None

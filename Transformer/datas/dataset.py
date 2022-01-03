@@ -44,7 +44,7 @@ class FaceScapeDataset(Dataset):
         self.mask_num = len(self.mask_list)
         self.image_size = image_size
 
-        self.block_num = 16
+        self.block_num = 32*32
 
         self.gray_transforms = transforms.Compose([
             transforms.Resize((image_size, image_size), Image.BILINEAR),

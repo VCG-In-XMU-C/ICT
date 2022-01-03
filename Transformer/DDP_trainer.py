@@ -160,7 +160,8 @@ class Trainer:
 
                     # decay the learning rate based on our progress
                     if config.lr_decay:
-                        self.tokens += (x.shape[0] * 16)  # number of tokens processed this step (i.e. label is not -100)
+                        self.tokens += (x.shape[0] * 32*32)
+                        # number of tokens processed this step (i.e. label is not -100)
                         # print(self.tokens)
                         # print(config.warmup_tokens)
                         if self.tokens < config.warmup_tokens:
