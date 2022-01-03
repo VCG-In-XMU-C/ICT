@@ -54,7 +54,7 @@ if __name__=='__main__':
     #                        attn_pdrop=0.0, n_layer=14, n_head=8,
     #                        n_embd=256,BERT=opts.BERT)
 
-    model_config = GPTConfig(512, opts.image_size*opts.image_size, embd_pdrop=0.0, resid_pdrop=0.0,
+    model_config = GPTConfig(256, opts.image_size*opts.image_size, embd_pdrop=0.0, resid_pdrop=0.0,
                              attn_pdrop=0.0, n_layer=opts.n_layer, n_head=opts.n_head,
                              n_embd=opts.n_embd, BERT=opts.BERT, use_gelu2=opts.GELU_2)
 
@@ -121,14 +121,15 @@ if __name__=='__main__':
                 a_tensor = torch.stack(a_list, dim=0)  # Input images
                 b_list = [y] * n_samples
                 b_tensor = torch.stack(b_list, dim=0)  # Input masks
-                a_tensor *= (1 - b_tensor).long()
+                b_tensor = b_tensor.int()
+                a_tensor *= (1 - b_tensor)
 
                 if opts.sample_all:
-                    pixels = sample_mask_all(IGPT_model, context=a_tensor, length=opts.image_size * opts.image_size,
+                    pixels = sample_mask_all(IGPT_model, context=a_tensor.long(), length=opts.image_size * opts.image_size,
                                              num_sample=n_samples, top_k=opts.top_k, mask=b_tensor,
                                              no_bar=opts.no_progressive_bar)
                 else:
-                    pixels = sample_mask(IGPT_model, context=a_tensor, length=opts.image_size * opts.image_size,
+                    pixels = sample_mask(IGPT_model, context=a_tensor.long(), length=opts.image_size * opts.image_size,
                                          num_sample=n_samples, top_k=opts.top_k, mask=b_tensor,
                                          no_bar=opts.no_progressive_bar)
 
