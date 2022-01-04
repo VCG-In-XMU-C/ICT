@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--n_layer', type=int, default=12)
     parser.add_argument('--n_head', type=int, default=8)
-    parser.add_argument('--n_embd', type=int, default=2048)
+    parser.add_argument('--n_embd', type=int, default=32*4)
     parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
 
     parser.add_argument('--save_url', type=str, default='./results/', help='save the output results')
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     #                        attn_pdrop=0.0, n_layer=14, n_head=8,
     #                        n_embd=256,BERT=opts.BERT)
 
-    model_config = GPTConfig(16, embd_pdrop=0.0, resid_pdrop=0.0,
+    model_config = GPTConfig(32*32, embd_pdrop=0.0, resid_pdrop=0.0,
                              attn_pdrop=0.0, n_layer=opts.n_layer, n_head=opts.n_head,
                              n_embd=opts.n_embd, BERT=opts.BERT, use_gelu2=opts.GELU_2)
 
