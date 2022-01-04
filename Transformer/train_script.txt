@@ -11,3 +11,5 @@ torch_512_multi -- 512 torch pca version
 python main.py --name torch_512_multi
 
 python main.py --name torch_32 --BERT
+
+python main.py --name torch_32_mpca --BERT

@@ -75,11 +75,11 @@ class FaceScapeDataset(Dataset):
             # mask = (mask > 0).astype(np.uint8) * 255
             # mask = Image.fromarray(mask).convert("L")
 
-        if self.is_train:
-            if random.random() > 0.5:
-                mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
-            if random.random() > 0.5:
-                mask = mask.transpose(Image.FLIP_TOP_BOTTOM)
+        # if self.is_train:
+        #     if random.random() > 0.5:
+        #         mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
+        #     if random.random() > 0.5:
+        #         mask = mask.transpose(Image.FLIP_TOP_BOTTOM)
 
         mask = self.gray_transforms(mask)
 

@@ -11,3 +11,5 @@ torch_512_multi -- 512 torch pca version
 python inference.py --name torch_512_multi
 
 python inference.py --name torch_32
+
+python inference.py --name torch_32_mpca

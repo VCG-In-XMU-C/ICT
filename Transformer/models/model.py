@@ -164,9 +164,13 @@ class GPT(nn.Module):
         self.criterionL1 = torch.nn.L1Loss()
 
         self.pca_model = joblib.load('.\\pca_%d.m' % self.NUM_PCA_COMPONENTS)  # load trained pca model
+        self.m_pca_model = joblib.load('.\\m_pca_%d.m' % self.NUM_PCA_COMPONENTS)  # load trained pca model
         self.pca_components = torch.from_numpy(self.pca_model.components_).cuda()
         self.pca_mean = torch.from_numpy(self.pca_model.mean_).cuda()
-        self.pca_inverse = self.pca_components.T.cuda()
+        # self.pca_inverse = self.pca_components.T.cuda()
+        self.m_pca_components = torch.from_numpy(self.m_pca_model.components_).cuda()
+        self.m_pca_mean = torch.from_numpy(self.m_pca_model.mean_).cuda()
+        self.m_pca_inverse = self.m_pca_components.T.cuda()
 
         logger.info("number of parameters: %f MB", sum(p.numel() for p in self.parameters())/1024/1024)
 
@@ -233,7 +237,7 @@ class GPT(nn.Module):
         # target_emb = rearrange(targets, 'b 1 (h p1) (w p2) -> (b h w) (p1 p2)', p1=64, p2=64)
         # shape of data: b * 16, 4096
 
-        data = torch.mm(data - self.pca_mean, self.pca_inverse)
+        data = torch.mm(data - self.m_pca_mean, self.m_pca_inverse)
         # data = torch.from_numpy(self.pca_model.transform(data.cpu())).to(device)
         # target_emb = torch.from_numpy(self.pca_model.transform(target_emb.cpu())).to(device)
         # target_emb = target_emb.type(torch.float32)
