@@ -13,3 +13,5 @@ python main.py --name torch_512_multi
 python main.py --name torch_32 --BERT
 
 python main.py --name torch_32_mpca --BERT
+
+python main.py --name torch_32_mpca_deeper --BERT --n_embd 256 --n_layer 14
