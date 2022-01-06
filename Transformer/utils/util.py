@@ -224,7 +224,9 @@ def generate_stroke_mask(im_size, max_parts=15, maxVertex=25, maxLength=100, max
 
 def np_free_form_mask(maxVertex, maxLength, maxBrushWidth, maxAngle, h, w):
     mask = np.zeros((h, w, 1), np.float32)
+    # 随机取一个小于maxVertex的数
     numVertex = np.random.randint(maxVertex + 1)
+    # 随机选择x、y方向的起始坐标
     startY = np.random.randint(h)
     startX = np.random.randint(w)
     brushWidth = 0
