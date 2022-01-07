@@ -108,7 +108,5 @@ class ImageNetDatasetMask(Dataset):
         x = read_img(selected_img_url,image_size=self.image_size, is_train=self.is_train)
         
         x = torch.from_numpy(np.array(x)).view(-1).long() # flatten out all pixels
-        cls_vocab = [0, 1, 2, 4, 5, 9, 16]
-        cls = cls_vocab.index(cls)
 
         return x[:], mask[:], cls

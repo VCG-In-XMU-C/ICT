@@ -85,7 +85,6 @@ if __name__=='__main__':
     if opts.BERT:
         cls_list = []
         target_list = []
-        cls_vocab = [0, 1, 2, 4, 5, 9, 16]
         m_list = []
         for x_name in img_list:
             for y_name in mask_list:
@@ -140,7 +139,7 @@ if __name__=='__main__':
                                          num_sample=n_samples, top_k=opts.top_k, mask=b_tensor,
                                          no_bar=opts.no_progressive_bar)
 
-                cls_list.append(cls_vocab[cls[0]])
+                cls_list.append(cls[0])
 
                 for i in range(n_samples):
                     current_url = os.path.join(opts.save_url, opts.name, 'condition_%d' % (i + 1))
