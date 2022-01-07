@@ -22,7 +22,7 @@ if __name__=='__main__':
     parser.add_argument('--GPU_ids', type=str, default='0')
     parser.add_argument('--ckpt_path', type=str, default='./ckpt')
     parser.add_argument('--BERT', action='store_true', help='BERT model, Image Completion')
-    parser.add_argument('--image_url', type=str, default='D:\\Data\\FaceScape_dist_list\\test\\',
+    parser.add_argument('--image_url', type=str, default='D:\\Data\\FaceScape_dist_list\\exp_test\\',
                         help='the folder of image')
     parser.add_argument('--mask_url', type=str, default='D:\\Data\\FaceScape_dist_list\\masks\\',
                         help='the folder of mask')
@@ -32,7 +32,7 @@ if __name__=='__main__':
 
     parser.add_argument('--n_layer', type=int, default=12)
     parser.add_argument('--n_head', type=int, default=8)
-    parser.add_argument('--n_embd', type=int, default=256)
+    parser.add_argument('--n_embd', type=int, default=512)
     parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
 
     parser.add_argument('--save_url', type=str, default='./result', help='save the output results')
@@ -43,6 +43,8 @@ if __name__=='__main__':
                         help='since the inference is slow, skip the image which has been inferenced')
 
     parser.add_argument('--no_progressive_bar', action='store_true', help='')
+
+    parser.add_argument('--class_size', type=int, default=7, help='cls')
     # parser.add_argument('--data_path',type=str,default='/home/ziyuwan/workspace/data/')
 
     opts = parser.parse_args()
@@ -56,7 +58,7 @@ if __name__=='__main__':
 
     model_config = GPTConfig(256, opts.image_size*opts.image_size, embd_pdrop=0.0, resid_pdrop=0.0,
                              attn_pdrop=0.0, n_layer=opts.n_layer, n_head=opts.n_head,
-                             n_embd=opts.n_embd, BERT=opts.BERT, use_gelu2=opts.GELU_2)
+                             n_embd=opts.n_embd, BERT=opts.BERT, use_gelu2=opts.GELU_2, class_size=opts.class_size)
 
     # Load model
     IGPT_model = GPT(model_config)

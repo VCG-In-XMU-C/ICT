@@ -134,13 +134,12 @@ class GPT(nn.Module):
         # 2. The learning of extra embedding, which is used to inner product to generate the final probability [x]
 
         # Start token
-        if not config.BERT:
-            self.sos = torch.nn.Parameter(torch.zeros(config.n_embd))
-            nn.init.normal_(self.sos)
+        self.sos = torch.nn.Parameter(torch.zeros(config.n_embd))
+        nn.init.normal_(self.sos)
 
         # input embedding stem
         self.tok_emb = nn.Embedding(config.vocab_size, config.n_embd)
-        self.pos_emb = nn.Parameter(torch.zeros(1, config.block_size, config.n_embd))
+        self.pos_emb = nn.Parameter(torch.zeros(1, config.block_size+1, config.n_embd))
         self.drop = nn.Dropout(config.embd_pdrop)
         # transformer
         if config.use_gelu2:
@@ -150,13 +149,14 @@ class GPT(nn.Module):
         # decoder head
         self.ln_f = nn.LayerNorm(config.n_embd)
         self.head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+        self.cls = nn.Linear(config.n_embd, config.class_size, bias=False)
 
         self.block_size = config.block_size
         self.config = config
 
         self.apply(self._init_weights)
 
-        logger.info("number of parameters: %e", sum(p.numel() for p in self.parameters()))
+        logger.info("number of parameters: %.4f MB", sum(p.numel() for p in self.parameters())/1024/1024)
 
     def get_block_size(self):
         return self.block_size
@@ -193,8 +193,7 @@ class GPT(nn.Module):
 
         # special case the position embedding parameter in the root GPT module as not decayed
         no_decay.add('pos_emb')
-        if not self.config.BERT:
-            no_decay.add('sos')
+        no_decay.add('sos')
 
         # validate that we considered every parameter
         param_dict = {pn: p for pn, p in self.named_parameters()}
@@ -213,7 +212,7 @@ class GPT(nn.Module):
         optimizer = torch.optim.AdamW(optim_groups, lr=train_config.learning_rate, betas=train_config.betas)
         return optimizer
 
-    def forward(self, idx, targets=None, masks=None):
+    def forward(self, idx, targets=None, masks=None, target_cls=None):
 
         b, t = idx.size()
         assert t <= self.block_size, "Cannot forward, model block size is exhausted."
@@ -222,19 +221,28 @@ class GPT(nn.Module):
         token_embeddings = self.tok_emb(idx) # each index maps to a (learnable) vector
         # token_embeddings = torch.cat([sos, token_embeddings[:, :-1, :]], axis=1)
 
-        if self.config.BERT:
-            masks = masks.unsqueeze(2)
-            token_embeddings = token_embeddings * (1 - masks)
-        else:
-            sos = torch.ones(b, 1, self.config.n_embd, device=idx.device) * self.sos
-            token_embeddings = torch.cat([sos, token_embeddings[:, :-1, :]], axis=1)
+        masks = masks.unsqueeze(2)
+        token_embeddings = token_embeddings * (1 - masks)
+        sos = torch.ones(b, 1, self.config.n_embd, device=idx.device) * self.sos
+        token_embeddings = torch.cat([sos, token_embeddings], axis=1)
 
-        position_embeddings = self.pos_emb[:, :t, :] # each position maps to a (learnable) vector
+        position_embeddings = self.pos_emb[:, :t+1, :] # each position maps to a (learnable) vector
 
         x = self.drop(token_embeddings + position_embeddings)
         x = self.blocks(x)
         x = self.ln_f(x)
-        logits = self.head(x)
+        logits = self.head(x[:, 1:, :])
+        cls = self.cls(x[:, 0, :])
+        # print(cls.shape)
+        # print(cls)
+        final_cls = cls.argmax(dim=1).view(-1)
+        target_cls_tmp = target_cls.view(-1)
+        error = final_cls - target_cls_tmp
+        correct_num = (error == 0).sum()
+        accuracy = correct_num/final_cls.shape[0]
+        # print(accuracy)
+        # print(final_cls)
+        # input()
 
         # if we are given some desired targets also calculate the loss
         loss = None
@@ -242,9 +250,10 @@ class GPT(nn.Module):
         # (B, 32*32)
         # print(logits.shape)
         # print(targets.shape)
+        # todo
         if targets is not None:
             if self.config.BERT:
-                loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), reduce=False)
+                loss1 = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), reduce=False)
 
                 # if torch.isnan(loss).any():
                 #     print("###########Warning, this iteration appears NAN###########")
@@ -252,12 +261,16 @@ class GPT(nn.Module):
                 #     print(targets)
                 #     print("#######################################################")
                 masks = masks.view(-1)
-                loss *= masks
+                loss1 *= masks
+                loss2 = F.cross_entropy(cls.view(-1, cls.size(-1)), target_cls, reduce=False)
                 if not self.config.dynamic_weight:
-                    loss = torch.mean(loss)
+                    loss1 = torch.mean(loss1)
+                    loss2 = torch.mean(loss2)
                 else:
-                    loss = torch.sum(loss) / torch.sum(masks)
-            else:
-                loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
+                    loss1 = torch.sum(loss1) / torch.sum(masks)
+                    loss2 = torch.sum(loss2) / torch.sum(masks)
+                loss = loss1 + loss2
 
-        return logits, loss
+            # else:
+            #     loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
+        return logits, loss, accuracy

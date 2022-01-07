@@ -36,7 +36,7 @@ def main_worker(gpu, opts):
     model_config=GPTConfig(train_dataset.vocab_size, train_dataset.block_size,
                            embd_pdrop=0.0, resid_pdrop=0.0, attn_pdrop=0.0, n_layer=opts.n_layer, n_head=opts.n_head,
                            n_embd=opts.n_embd, BERT=opts.BERT, use_gelu2=opts.GELU_2,
-                           dynamic_weight=opts.dynamic_weight)
+                           dynamic_weight=opts.dynamic_weight, class_size=opts.class_size)
 
     # Original n_layer=12, n_head=8, n_embd=256
     IGPT_model = GPT(model_config)
@@ -65,16 +65,16 @@ if __name__=='__main__':
     parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
     parser.add_argument('--GPU_ids', type=str, default='0')
     parser.add_argument('--ckpt_path', type=str, default='./ckpt')
-    parser.add_argument('--data_path', type=str, default='D:\\Data\\FaceScape_dist_list\\train\\',
+    parser.add_argument('--data_path', type=str, default='D:\\Data\\FaceScape_dist_list\\exp_train\\',
                         help='Indicate where is the training set')
     parser.add_argument('--mask_path', type=str, default='D:\\Data\\FaceScape_dist_list\\masks\\')
     parser.add_argument('--BERT', action='store_true', help='Use bert objective to train')
-    parser.add_argument('--ImageNet', action='store_true', help='Training with ImageNet')
-    parser.add_argument('--batch_size', type=int, default=2*6, help='16*8 maybe suitable for V100')
+    # parser.add_argument('--ImageNet', action='store_true', help='Training with ImageNet')
+    parser.add_argument('--batch_size', type=int, default=2*6, help='16*8 maybe suitable for V100')  # todo
     parser.add_argument('--train_epoch', type=int, default=80, help='how many epochs')
     parser.add_argument('--print_freq', type=int, default=200, help='While training, the freq of printing log')
 
-    parser.add_argument('--validation_path', type=str, default='D:\\Data\\FaceScape_dist_list\\test\\',
+    parser.add_argument('--validation_path', type=str, default='D:\\Data\\FaceScape_dist_list\\exp_test\\',
                         help='where is the validation set of ImageNet')
 
     parser.add_argument('--image_size', type=int, default=32, help='input sequence length = image_size*image_size')
@@ -82,24 +82,24 @@ if __name__=='__main__':
     # Define the size of transformer
     parser.add_argument('--n_layer', type=int, default=12)  # try 12 14
     parser.add_argument('--n_head', type=int, default=8)
-    parser.add_argument('--n_embd', type=int, default=256)
+    parser.add_argument('--n_embd', type=int, default=512)
     parser.add_argument('--lr', type=float, default=3e-4)
+    # todo
     parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
 
     parser.add_argument('--random_stroke', action='store_true', help='use the generated mask')
 
     # Adjust the objective weight of log-likelihood
     parser.add_argument('--dynamic_weight', action='store_true', help='Not mean directly, based on the mask regions')
-
     parser.add_argument('--use_ImageFolder', action='store_true', help='using the original folder for ImageNet dataset')
-
 
     ### DDP+AMP
     parser.add_argument('--gpus', type=int, default=1, help='how many GPUs in one node')
     parser.add_argument('--gpu', type=str, default='cuda:0')
     parser.add_argument('--AMP', action='store_true', help='Automatic Mixed Precision')
     parser.add_argument('--resume_ckpt', type=str, default='latest.pth', help='start from where, the default is latest')
-    
+
+    parser.add_argument('--class_size', type=int, default=7, help='cls')
 
     opts = parser.parse_args()
     opts.ckpt_path = os.path.join(opts.ckpt_path, opts.name)

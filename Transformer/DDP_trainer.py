@@ -105,28 +105,29 @@ class Trainer:
 
             losses = []
             scaler = GradScaler()
-            for it, (x, y) in enumerate(loader):
+            for it, (x, y, cls) in enumerate(loader):
 
                 # place data on the correct device
                 x = x.to(self.device)
                 y = y.to(self.device)
+                cls = cls.to(self.device)
 
                 # forward the model
                 if self.config.AMP:  # use AMP
                     with autocast():
                         with torch.set_grad_enabled(is_train):
                             if self.config.BERT:
-                                logits, loss = model(x, x, y)
-                            else:
-                                logits, loss = model(x, y)
+                                logits, loss = model(x, x, y, cls)
+                            # else:
+                            #     logits, loss = model(x, y)
                             loss = loss.mean()  # collapse all losses if they are scattered on multiple gpus
                             losses.append(loss.item())
                 else:
                     with torch.set_grad_enabled(is_train):
                         if self.config.BERT:
-                            logits, loss = model(x, x, y)
-                        else:
-                            logits, loss = model(x, y)
+                            logits, loss, accuracy = model(x, x, y, cls)
+                        # else:
+                        #     logits, loss = model(x, y)
                         loss = loss.mean()  # collapse all losses if they are scattered on multiple gpus
                         losses.append(loss.item())
 
@@ -169,7 +170,8 @@ class Trainer:
                         lr = config.learning_rate
 
                     if it % self.config.print_freq == 0:
-                        print(f"epoch {epoch+1} iter {it}: train loss {loss.item():.5f}. lr {lr:e}")
+                        print(f"epoch {epoch+1} iter {it}: train loss {loss.item():.5f} "
+                              f"accuracy {accuracy:.1f} lr {lr:e}")
 
             if not is_train:
                 test_loss = float(np.mean(losses))
