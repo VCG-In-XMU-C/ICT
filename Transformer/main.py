@@ -65,7 +65,7 @@ if __name__=='__main__':
     parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
     parser.add_argument('--GPU_ids', type=str, default='0')
     parser.add_argument('--ckpt_path', type=str, default='./ckpt')
-    parser.add_argument('--data_path', type=str, default='D:\\Data\\FaceScape_dist_list\\exp_train\\',
+    parser.add_argument('--data_path', type=str, default='D:\\Data\\FaceScape_dist_list\\train\\',
                         help='Indicate where is the training set')
     parser.add_argument('--mask_path', type=str, default='D:\\Data\\FaceScape_dist_list\\masks\\')
     parser.add_argument('--BERT', action='store_true', help='Use bert objective to train')
@@ -74,7 +74,7 @@ if __name__=='__main__':
     parser.add_argument('--train_epoch', type=int, default=80, help='how many epochs')
     parser.add_argument('--print_freq', type=int, default=200, help='While training, the freq of printing log')
 
-    parser.add_argument('--validation_path', type=str, default='D:\\Data\\FaceScape_dist_list\\exp_test\\',
+    parser.add_argument('--validation_path', type=str, default='D:\\Data\\FaceScape_dist_list\\test\\',
                         help='where is the validation set of ImageNet')
 
     parser.add_argument('--image_size', type=int, default=32, help='input sequence length = image_size*image_size')
