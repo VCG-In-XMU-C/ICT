@@ -83,13 +83,16 @@ if __name__=='__main__':
         print("Resume from %s" % (img_list[0]))
 
     if opts.BERT:
-
+        cls_list = []
+        target_list = []
+        cls_vocab = [0, 1, 2, 4, 5, 9, 16]
         for x_name in img_list:
             for y_name in mask_list:
                 # if x_name != y_name:
                 #     print("### Something Wrong ###")
 
                 image_url = os.path.join(opts.image_url, x_name)
+                target_list.append(int(image_url[-6:-4]))
                 input_image = Image.open(image_url).convert("L")
                 x = input_image.resize((opts.image_size, opts.image_size), resample=Image.BILINEAR)
                 x = torch.from_numpy(np.array(x)).view(-1)
@@ -127,13 +130,15 @@ if __name__=='__main__':
                 a_tensor *= (1 - b_tensor)
 
                 if opts.sample_all:
-                    pixels = sample_mask_all(IGPT_model, context=a_tensor.long(), length=opts.image_size * opts.image_size,
+                    pixels, cls = sample_mask_all(IGPT_model, context=a_tensor.long(), length=opts.image_size * opts.image_size,
                                              num_sample=n_samples, top_k=opts.top_k, mask=b_tensor,
                                              no_bar=opts.no_progressive_bar)
                 else:
                     pixels = sample_mask(IGPT_model, context=a_tensor.long(), length=opts.image_size * opts.image_size,
                                          num_sample=n_samples, top_k=opts.top_k, mask=b_tensor,
                                          no_bar=opts.no_progressive_bar)
+
+                cls_list.append(cls_vocab[cls[0]])
 
                 for i in range(n_samples):
                     current_url = os.path.join(opts.save_url, opts.name, 'condition_%d' % (i + 1))
@@ -142,6 +147,10 @@ if __name__=='__main__':
                     tmp = Image.fromarray(current_img)
                     tmp.save(os.path.join(current_url, img_name))
                 print("Finish %s" % img_name)
+
+        cls_path = os.path.join(opts.save_url, opts.name)
+        np.save(os.path.join(cls_path, 'cls.npy'), cls_list)
+        np.save(os.path.join(cls_path, 'target.npy'), target_list)
 
         e_time = time.time()
         print("This test totally costs %.5f seconds" % (e_time-s_time))

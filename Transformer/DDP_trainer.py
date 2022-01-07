@@ -125,7 +125,7 @@ class Trainer:
                 else:
                     with torch.set_grad_enabled(is_train):
                         if self.config.BERT:
-                            logits, loss, accuracy = model(x, x, y, cls)
+                            logits, loss, accuracy, _ = model(x, x, y, cls)
                         # else:
                         #     logits, loss = model(x, y)
                         loss = loss.mean()  # collapse all losses if they are scattered on multiple gpus

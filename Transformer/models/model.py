@@ -236,22 +236,19 @@ class GPT(nn.Module):
         # print(cls.shape)
         # print(cls)
         final_cls = cls.argmax(dim=1).view(-1)
-        target_cls_tmp = target_cls.view(-1)
-        error = final_cls - target_cls_tmp
-        correct_num = (error == 0).sum()
-        accuracy = correct_num/final_cls.shape[0]
         # print(accuracy)
         # print(final_cls)
         # input()
 
         # if we are given some desired targets also calculate the loss
         loss = None
+        accuracy = None
         # (B, 32*32, 512)
         # (B, 32*32)
         # print(logits.shape)
         # print(targets.shape)
         # todo
-        if targets is not None:
+        if targets is not None and target_cls is not None:
             if self.config.BERT:
                 loss1 = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), reduce=False)
 
@@ -262,6 +259,11 @@ class GPT(nn.Module):
                 #     print("#######################################################")
                 masks = masks.view(-1)
                 loss1 *= masks
+
+                target_cls_tmp = target_cls.view(-1)
+                error = final_cls - target_cls_tmp
+                correct_num = (error == 0).sum()
+                accuracy = correct_num / final_cls.shape[0]
                 loss2 = F.cross_entropy(cls.view(-1, cls.size(-1)), target_cls, reduce=False)
                 if not self.config.dynamic_weight:
                     loss1 = torch.mean(loss1)
@@ -273,4 +275,4 @@ class GPT(nn.Module):
 
             # else:
             #     loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
-        return logits, loss, accuracy
+        return logits, loss, accuracy, final_cls

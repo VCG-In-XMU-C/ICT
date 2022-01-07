@@ -125,7 +125,7 @@ def sample_mask_all(model, context, length, num_sample=1, temperature=1.0, top_k
     model.eval()
     with torch.no_grad():
 
-        logits,_ = model(output,masks=mask)
+        logits, _, _, cls = model(output, masks=mask)
 
         if no_bar:
             looper=range(length)
@@ -142,7 +142,7 @@ def sample_mask_all(model, context, length, num_sample=1, temperature=1.0, top_k
             pred = torch.multinomial(probs, num_samples=1)
             output[:,i] = pred[:,0]
 
-    return output
+    return output, cls
 
 
 

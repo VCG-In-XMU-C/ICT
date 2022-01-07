@@ -1,1 +1,3 @@
 python inference.py --name original_gray_48 --BERT --GELU_2 --image_size 48
+
+python inference.py --name Bert_v1 --BERT --GELU_2 --sample_all
