@@ -19,14 +19,14 @@ if __name__=='__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
-    parser.add_argument('--GPU_ids', type=str, default='0')
+    parser.add_argument('--GPU_ids', type=str, default='1')
     parser.add_argument('--ckpt_path', type=str, default='./ckpt')
     parser.add_argument('--BERT', action='store_true', help='BERT model, Image Completion')
     parser.add_argument('--image_url', type=str, default='D:\\Data\\FaceScape_dist_list\\exp_test\\',
                         help='the folder of image')
     parser.add_argument('--mask_url', type=str, default='D:\\Data\\FaceScape_dist_list\\masks\\',
                         help='the folder of mask')
-    parser.add_argument('--top_k', type=int, default=100)
+    parser.add_argument('--top_k', type=int, default=20)
 
     parser.add_argument('--image_size', type=int, default=32, help='input sequence length: image_size*image_size')
 
@@ -36,7 +36,7 @@ if __name__=='__main__':
     parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
 
     parser.add_argument('--save_url', type=str, default='./result', help='save the output results')
-    parser.add_argument('--n_samples', type=int, default=8, help='sample cnt')
+    parser.add_argument('--n_samples', type=int, default=5, help='sample cnt')
 
     parser.add_argument('--sample_all', action='store_true', help='sample all pixel together, ablation use')
     parser.add_argument('--skip_number', type=int, default=0,
@@ -86,12 +86,14 @@ if __name__=='__main__':
         cls_list = []
         target_list = []
         cls_vocab = [0, 1, 2, 4, 5, 9, 16]
+        m_list = []
         for x_name in img_list:
             for y_name in mask_list:
                 # if x_name != y_name:
                 #     print("### Something Wrong ###")
 
                 image_url = os.path.join(opts.image_url, x_name)
+                m_list.append(int(y_name[-6:-4]))
                 target_list.append(int(image_url[-6:-4]))
                 input_image = Image.open(image_url).convert("L")
                 x = input_image.resize((opts.image_size, opts.image_size), resample=Image.BILINEAR)
@@ -111,7 +113,7 @@ if __name__=='__main__':
                 mask_url = os.path.join(opts.save_url, opts.name, 'masked')
                 os.makedirs(mask_url, exist_ok=True)
 
-                masked = x * (1-y)
+                masked = x * y
                 masked = masked.reshape(opts.image_size, opts.image_size).numpy().astype(np.uint8)
                 masked = Image.fromarray(masked)
                 masked.save(os.path.join(mask_url, img_name))
@@ -127,7 +129,7 @@ if __name__=='__main__':
                 b_list = [y] * n_samples
                 b_tensor = torch.stack(b_list, dim=0)  # Input masks
                 b_tensor = b_tensor.int()
-                a_tensor *= (1 - b_tensor)
+                # a_tensor *= (1 - b_tensor)
 
                 if opts.sample_all:
                     pixels, cls = sample_mask_all(IGPT_model, context=a_tensor.long(), length=opts.image_size * opts.image_size,
@@ -151,6 +153,7 @@ if __name__=='__main__':
         cls_path = os.path.join(opts.save_url, opts.name)
         np.save(os.path.join(cls_path, 'cls.npy'), cls_list)
         np.save(os.path.join(cls_path, 'target.npy'), target_list)
+        np.save(os.path.join(cls_path, 'mask.npy'), m_list)
 
         e_time = time.time()
         print("This test totally costs %.5f seconds" % (e_time-s_time))
