@@ -222,7 +222,7 @@ class GPT(nn.Module):
         # token_embeddings = torch.cat([sos, token_embeddings[:, :-1, :]], axis=1)
 
         masks = masks.unsqueeze(2)
-        token_embeddings = token_embeddings * (1 - masks)
+        token_embeddings = token_embeddings * masks
         sos = torch.ones(b, 1, self.config.n_embd, device=idx.device) * self.sos
         token_embeddings = torch.cat([sos, token_embeddings], axis=1)
 
@@ -258,7 +258,7 @@ class GPT(nn.Module):
                 #     print(targets)
                 #     print("#######################################################")
                 masks = masks.view(-1)
-                loss1 *= masks
+                loss1 *= (1-masks)
 
                 target_cls_tmp = target_cls.view(-1)
                 error = final_cls - target_cls_tmp

@@ -24,8 +24,8 @@ def read_img(img_url, image_size, is_train):
             y1=randrange(0,y-matrix_length+1)
             img=img.crop((x1,y1,x1+matrix_length,y1+matrix_length))
 
-    if random.random()>0.5 and is_train:
-        img=img.transpose(Image.FLIP_LEFT_RIGHT)
+    # if random.random()>0.5 and is_train:
+    #     img=img.transpose(Image.FLIP_LEFT_RIGHT)
 
     img=img.resize((image_size,image_size),resample=Image.BILINEAR)
     return np.array(img)
