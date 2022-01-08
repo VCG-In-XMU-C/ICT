@@ -139,7 +139,7 @@ if __name__=='__main__':
                                          num_sample=n_samples, top_k=opts.top_k, mask=b_tensor,
                                          no_bar=opts.no_progressive_bar)
 
-                cls_list.append(cls[0])
+                cls_list.append(cls[0].cpu())
 
                 for i in range(n_samples):
                     current_url = os.path.join(opts.save_url, opts.name, 'condition_%d' % (i + 1))
