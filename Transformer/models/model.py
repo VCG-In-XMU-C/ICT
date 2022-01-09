@@ -257,8 +257,8 @@ class GPT(nn.Module):
                 #     print(idx)
                 #     print(targets)
                 #     print("#######################################################")
-                # masks = masks.view(-1)
-                # loss1 *= (1-masks)
+                masks = masks.view(-1)
+                loss1 *= (1-masks)
 
                 target_cls_tmp = target_cls.view(-1)
                 error = final_cls - target_cls_tmp

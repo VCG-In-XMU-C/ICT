@@ -22,9 +22,9 @@ if __name__=='__main__':
     parser.add_argument('--GPU_ids', type=str, default='1')
     parser.add_argument('--ckpt_path', type=str, default='./ckpt')
     parser.add_argument('--BERT', action='store_true', help='BERT model, Image Completion')
-    parser.add_argument('--image_url', type=str, default='D:\\Data\\FaceScape_dist_list\\old_data\\exp_test\\',
+    parser.add_argument('--image_url', type=str, default='D:\\Data\\FaceScape_dist_list\\final\\test\\images\\',
                         help='the folder of image')
-    parser.add_argument('--mask_url', type=str, default='D:\\Data\\FaceScape_dist_list\\masks\\',
+    parser.add_argument('--mask_url', type=str, default='D:\\Data\\FaceScape_dist_list\\final\\small_masks\\',
                         help='the folder of mask')
     parser.add_argument('--top_k', type=int, default=20)
 

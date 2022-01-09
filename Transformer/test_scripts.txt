@@ -7,3 +7,5 @@ python inference.py --name Bert_v2 --BERT --GELU_2 --sample_all
 python inference.py --name Bert_v3 --BERT --GELU_2 --sample_all
 
 python inference.py --name Bert_v3_olddata --BERT --GELU_2 --sample_all
+
+python inference.py --name Bert_v4 --BERT --GELU_2 --sample_all
