@@ -65,7 +65,7 @@ class Trainer:
         if os.path.exists(resume_path):
             # data = torch.load(resume_path, map_location = lambda storage, loc: set_device(storage))
             # data = torch.load(resume_path)
-            data = torch.load(resume_path, map_location='cuda:{}'.format(self.device))
+            data = torch.load(resume_path, map_location='{}'.format(self.device))
             self.model.load_state_dict(data['model'])
             print('Finished reloading the Epoch %d model' % (data['epoch']))
             return data
