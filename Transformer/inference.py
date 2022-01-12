@@ -46,7 +46,7 @@ if __name__=='__main__':
 
     parser.add_argument('--image_size', type=int, default=32, help='input sequence length: image_size*image_size')
 
-    parser.add_argument('--n_layer', type=int, default=12)
+    parser.add_argument('--n_layer', type=int, default=14)
     parser.add_argument('--n_head', type=int, default=8)
     parser.add_argument('--n_embd', type=int, default=512)
     parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
