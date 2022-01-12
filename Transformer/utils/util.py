@@ -133,7 +133,7 @@ def sample_mask_all(model, context, length, num_sample=1, temperature=1.0, top_k
             looper=tqdm(range(length), leave=False)
         for i in looper:
 
-            if mask[0,i] == 0:
+            if mask[0,i] == 1:
                 continue
             logits_i = logits[:, i, :] / temperature
             if top_k is not None:

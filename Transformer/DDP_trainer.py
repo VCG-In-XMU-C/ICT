@@ -176,7 +176,7 @@ class Trainer:
             if not is_train:
                 test_loss = float(np.mean(losses))
                 logger.info("test loss: %f", test_loss)
-                return test_loss
+                return test_loss, accuracy
 
         if loaded_ckpt is None:
             self.tokens = 0 # counter used for learning rate decay
@@ -193,10 +193,10 @@ class Trainer:
             epoch_start = time.time()
             run_epoch('train')
             if self.test_dataset is not None:
-                test_loss = run_epoch('test')
+                test_loss, accuracy = run_epoch('test')
             
-            print("Epoch: %d, test loss: %f, time for one epoch: %d seconds" % (epoch,
-                                                                                test_loss, time.time() - epoch_start))
+            print("Epoch: %d, test loss: %f, accuracy: %f, time for one epoch: "
+                  "%d seconds" % (epoch, test_loss, accuracy, time.time() - epoch_start))
             # supports early stopping based on the test loss, or just save always if no test set is provided
             good_model = self.test_dataset is None or test_loss < best_loss
             if self.config.ckpt_path is not None and good_model:

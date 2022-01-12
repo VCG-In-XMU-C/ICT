@@ -13,3 +13,5 @@ python inference.py --name Bert_v4 --BERT --GELU_2 --sample_all
 python inference.py --name Bert_v4_full --BERT --GELU_2 --sample_all
 
 python inference.py --name final_random --BERT --GELU_2 --sample_all
+
+python inference.py --name final_mask_test --BERT --GELU_2 --sample_all
