@@ -1,6 +1,6 @@
 
 ## Inference
-
+import cv2
 import numpy as np
 import torchvision
 import torch
@@ -14,6 +14,22 @@ from tqdm import tqdm
 from PIL import Image
 import os
 import time
+from skimage.measure import compare_psnr as psnr
+from skimage import measure
+
+
+def save_result(path, result):
+    tmp = open(path, mode='w')
+    tmp.write(result)
+    tmp.close()
+
+
+def calc_ssim_psnr(img1, img2):
+    # img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+    # img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+    # img1[img2 == 0] = 0
+    # return ssim(img1, img2), psnr(img1, img2)
+    return measure.compare_ssim(img1, img2), psnr(img1, img2)
 
 if __name__=='__main__':
 
@@ -22,9 +38,9 @@ if __name__=='__main__':
     parser.add_argument('--GPU_ids', type=str, default='1')
     parser.add_argument('--ckpt_path', type=str, default='./ckpt')
     parser.add_argument('--BERT', action='store_true', help='BERT model, Image Completion')
-    parser.add_argument('--image_url', type=str, default='D:\\Data\\FaceScape_dist_list\\final\\test\\images\\',
+    parser.add_argument('--image_url', type=str, default='/mnt/datadisk0/final/test/images/',
                         help='the folder of image')
-    parser.add_argument('--mask_url', type=str, default='D:\\Data\\FaceScape_dist_list\\final\\small_masks\\',
+    parser.add_argument('--mask_url', type=str, default='/mnt/datadisk0/final/small_masks/',
                         help='the folder of mask')
     parser.add_argument('--top_k', type=int, default=20)
 
@@ -36,7 +52,7 @@ if __name__=='__main__':
     parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
 
     parser.add_argument('--save_url', type=str, default='./result', help='save the output results')
-    parser.add_argument('--n_samples', type=int, default=5, help='sample cnt')
+    parser.add_argument('--n_samples', type=int, default=3, help='sample cnt')
 
     parser.add_argument('--sample_all', action='store_true', help='sample all pixel together, ablation use')
     parser.add_argument('--skip_number', type=int, default=0,
@@ -70,6 +86,7 @@ if __name__=='__main__':
     else:
         IGPT_model.load_state_dict(checkpoint['model'])
 
+    IGPT_model.eval()
     IGPT_model.cuda()
 
     n_samples = opts.n_samples
@@ -86,6 +103,9 @@ if __name__=='__main__':
         cls_list = []
         target_list = []
         m_list = []
+        ssim_list = 0
+        psnr_list = 0
+        dataset_size = len(img_list) * len(mask_list)
         for x_name in img_list:
             for y_name in mask_list:
                 # if x_name != y_name:
@@ -108,7 +128,7 @@ if __name__=='__main__':
                 # shape of x is [32 * 32, 3]
                 # shape of y is [32 * 32]
 
-                img_name = x_name[:-4] + y_name[:-4] + '.png'
+                img_name = x_name[:-4] + '_' + y_name[:-4] + '.png'
                 mask_url = os.path.join(opts.save_url, opts.name, 'masked')
                 os.makedirs(mask_url, exist_ok=True)
 
@@ -145,6 +165,16 @@ if __name__=='__main__':
                     current_url = os.path.join(opts.save_url, opts.name, 'condition_%d' % (i + 1))
                     os.makedirs(current_url, exist_ok=True)
                     current_img = pixels[i].view(opts.image_size, opts.image_size).cpu().numpy().astype(np.uint8)
+                    if i == 0:
+                        merge_url = os.path.join(opts.save_url, opts.name, 'merge')
+                        os.makedirs(merge_url, exist_ok=True)
+                        merge_img = pixels[i].cpu() * (1-y) + x * y
+                        merge_img = merge_img.view(opts.image_size, opts.image_size).cpu().numpy().astype(np.uint8)
+                        ssim_result, psnr_result = calc_ssim_psnr(merge_img, x.view(opts.image_size, opts.image_size).cpu().numpy().astype(np.uint8))
+                        ssim_list += ssim_result
+                        psnr_list += psnr_result
+                        tmp1 = Image.fromarray(merge_img)
+                        tmp1.save(os.path.join(merge_url, img_name))
                     tmp = Image.fromarray(current_img)
                     tmp.save(os.path.join(current_url, img_name))
                 print("Finish %s" % img_name)
@@ -153,6 +183,13 @@ if __name__=='__main__':
         np.save(os.path.join(cls_path, 'cls.npy'), cls_list)
         np.save(os.path.join(cls_path, 'target.npy'), target_list)
         np.save(os.path.join(cls_path, 'mask.npy'), m_list)
+
+        average_ssim = ssim_list / dataset_size
+        average_psnr = psnr_list / dataset_size
+        result_dir = os.path.join(cls_path, 'result.txt')
+        result_str = 'ssim = %f, psnr = %f' % (average_ssim, average_psnr)
+        print(result_str)
+        save_result(result_dir, result_str)
 
         e_time = time.time()
         print("This test totally costs %.5f seconds" % (e_time-s_time))

@@ -20,3 +20,4 @@ python main.py --name Bert_v4 --BERT --batch_size 1 --train_epoch 80 --GELU_2
 
 python main.py --name Bert_v4_full --BERT --batch_size 1 --train_epoch 40 --GELU_2
 
+python main.py --name final_random --BERT --batch_size 1 --GELU_2
