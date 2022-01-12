@@ -1,4 +1,5 @@
 from torch.utils.data import Dataset
+import itertools
 import torch
 import numpy as np
 import os
@@ -63,24 +64,26 @@ class ImageNetDatasetMask(Dataset):
         self.mask_list = os.listdir(self.mask_dir)
         self.mask_list = sorted(self.mask_list)
 
+        self.tuples = list(itertools.product(self.image_id_list, self.mask_list))
+
         self.vocab_size = 256
         # self.block_size = 32*32 - 1
         self.block_size = image_size * image_size
         self.mask_num = len(self.mask_list)
-
         self.image_size = image_size
 
-        print("# Mask is %d, # Image is %d" % (self.mask_num, len(self.image_id_list)))
+        print("# Mask is %d, # Image is %d, %d Totally." % (self.mask_num, len(self.image_id_list), len(self.tuples)))
 
     def __len__(self):
-        return len(self.image_id_list)
+        return len(self.tuples)
 
     def __getitem__(self, idx):
+        selected_img_name, selected_mask_name = self.tuples[idx]
 
-        if self.is_train:
-            selected_mask_name = random.sample(self.mask_list, 1)[0]
-        else:
-            selected_mask_name = self.mask_list[idx % self.mask_num]
+        # if self.is_train:
+        #     selected_mask_name=random.sample(self.mask_list,1)[0]
+        # else:
+        #     selected_mask_name=self.mask_list[idx%self.mask_num]
 
         # if not self.random_stroke:
         selected_mask_dir = os.path.join(self.mask_dir, selected_mask_name)
@@ -103,14 +106,12 @@ class ImageNetDatasetMask(Dataset):
         mask = (mask / 255.) > 0.5
         mask = mask.float()
 
-        selected_img_name = self.image_id_list[idx]
+        # selected_img_name = self.image_id_list[idx]
         selected_img_url = selected_img_name
         # selected_img_url = os.path.join(self.pt_dataset,selected_img_name)
         cls = int(selected_img_url[-6:-4])
         x = read_img(selected_img_url, image_size=self.image_size, is_train=self.is_train)
 
         x = torch.from_numpy(np.array(x)).view(-1).long()  # flatten out all pixels
-        # cls_vocab = [0, 1, 2, 4, 5, 9, 16]
-        # cls = cls_vocab.index(cls)
 
         return x[:], mask[:], cls
