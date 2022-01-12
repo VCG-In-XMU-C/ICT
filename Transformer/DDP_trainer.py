@@ -104,6 +104,7 @@ class Trainer:
             loader = train_loader if is_train else test_loader
 
             losses = []
+            accuracys = []
             scaler = GradScaler()
             for it, (x, y, cls) in enumerate(loader):
 
@@ -129,6 +130,7 @@ class Trainer:
                         # else:
                         #     logits, loss = model(x, y)
                         loss = loss.mean()  # collapse all losses if they are scattered on multiple gpus
+                        accuracys.append(accuracy.cpu())
                         losses.append(loss.item())
 
                 if is_train:
@@ -175,8 +177,9 @@ class Trainer:
 
             if not is_train:
                 test_loss = float(np.mean(losses))
+                avg_accuracy = float(np.mean(accuracys))
                 logger.info("test loss: %f", test_loss)
-                return test_loss, accuracy
+                return test_loss, avg_accuracy
 
         if loaded_ckpt is None:
             self.tokens = 0 # counter used for learning rate decay
@@ -206,6 +209,7 @@ class Trainer:
                 self.save_checkpoint(epoch, optimizer, self.tokens, best_loss,save_name='best')
             
             if not np.isnan(test_loss):
+                self.save_checkpoint(epoch, optimizer, self.tokens, best_loss, save_name=str(epoch))
                 self.save_checkpoint(epoch, optimizer, self.tokens, best_loss,save_name='latest')
             else:
                 print('NaN happens, try to reload the previous normal checkpoint')

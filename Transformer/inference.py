@@ -184,10 +184,14 @@ if __name__=='__main__':
         np.save(os.path.join(cls_path, 'target.npy'), target_list)
         np.save(os.path.join(cls_path, 'mask.npy'), m_list)
 
+        sub = np.subtract(cls_list, target_list)
+        sub = (sub == 0)
+        accuracy = sub.sum() / len(cls_list)
+
         average_ssim = ssim_list / dataset_size
         average_psnr = psnr_list / dataset_size
         result_dir = os.path.join(cls_path, 'result.txt')
-        result_str = 'ssim = %f, psnr = %f' % (average_ssim, average_psnr)
+        result_str = 'ssim = %f, psnr = %f, accuracy = %f' % (average_ssim, average_psnr, accuracy)
         print(result_str)
         save_result(result_dir, result_str)
 
