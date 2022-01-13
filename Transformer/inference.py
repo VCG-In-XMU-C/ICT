@@ -36,7 +36,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
     parser.add_argument('--GPU_ids', type=str, default='1')
-    parser.add_argument('--ckpt_path', type=str, default='./ckpt')
+    parser.add_argument('--ckpt_path', type=str, default='/mnt/datadisk0/Transformer/')
     parser.add_argument('--BERT', action='store_true', help='BERT model, Image Completion')
     parser.add_argument('--image_url', type=str, default='/mnt/datadisk0/final/test/images/',
                         help='the folder of image')
@@ -78,7 +78,7 @@ if __name__=='__main__':
 
     # Load model
     IGPT_model = GPT(model_config)
-    ckpt_path = os.path.join(opts.ckpt_path, opts.name, 'best.pth')
+    ckpt_path = os.path.join(opts.ckpt_path, opts.name, '79.pth')
     checkpoint = torch.load(ckpt_path)
     
     if opts.ckpt_path.endswith('.pt'):
