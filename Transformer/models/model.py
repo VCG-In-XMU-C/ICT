@@ -250,15 +250,15 @@ class GPT(nn.Module):
         # todo
         if targets is not None and target_cls is not None:
             if self.config.BERT:
-                loss1 = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), reduce=False)
+                # loss1 = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1), reduce=False)
 
                 # if torch.isnan(loss).any():
                 #     print("###########Warning, this iteration appears NAN###########")
                 #     print(idx)
                 #     print(targets)
                 #     print("#######################################################")
-                masks = masks.view(-1)
-                loss1 *= (1-masks)
+                # masks = masks.view(-1)
+                # loss1 *= (1-masks)
 
                 target_cls_tmp = target_cls.view(-1)
                 error = final_cls - target_cls_tmp
@@ -266,12 +266,12 @@ class GPT(nn.Module):
                 accuracy = correct_num / final_cls.shape[0]
                 loss2 = F.cross_entropy(cls.view(-1, cls.size(-1)), target_cls, reduce=False)
                 if not self.config.dynamic_weight:
-                    loss1 = torch.mean(loss1)
+                    # loss1 = torch.mean(loss1)
                     loss2 = torch.mean(loss2)
                 else:
-                    loss1 = torch.sum(loss1) / torch.sum(masks)
+                    # loss1 = torch.sum(loss1) / torch.sum(masks)
                     loss2 = torch.sum(loss2) / torch.sum(masks)
-                loss = loss1 + loss2
+                loss = loss2
 
             # else:
             #     loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
