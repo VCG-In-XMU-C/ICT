@@ -82,10 +82,10 @@ if __name__ == '__main__':
     parser.add_argument('--image_size', type=int, default=256, help='input sequence length = image_size*image_size')
 
     # Define the size of transformer
-    parser.add_argument('--n_layer', type=int, default=16)
+    parser.add_argument('--n_layer', type=int, default=14)
     parser.add_argument('--n_head', type=int, default=8)
     parser.add_argument('--n_embd', type=int, default=512)
-    parser.add_argument('--lr', type=float, default=1e-4)
+    parser.add_argument('--lr', type=float, default=2e-4)
     parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
 
     parser.add_argument('--random_stroke', action='store_true', help='use the generated mask')
