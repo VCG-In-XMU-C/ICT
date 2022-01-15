@@ -177,3 +177,4 @@ if __name__ == '__main__':
             os.makedirs(cls_path, exist_ok=True)
             result_dir = os.path.join(cls_path, 'final_result.txt')
             result_str = 'In epoch %d, best accuracy = %f' % (best_index, best)
+            save_result(result_dir, result_str)
