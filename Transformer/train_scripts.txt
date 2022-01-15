@@ -30,3 +30,5 @@ python main.py --name final_full --BERT --batch_size 16 --GELU_2
 python main.py --name adjust_14 --BERT --batch_size 16 --GELU_2
 
 python main.py --name adjust_14_noMLM --train_epoch 100 --BERT --batch_size 8 --GELU_2
+
+python main.py --name adjust_14_MLM --train_epoch 100 --BERT --batch_size 8 --GELU_2
