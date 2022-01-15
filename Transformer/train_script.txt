@@ -15,3 +15,12 @@ python main.py --name pca_classifier --train_epoch 100 --BERT --batch_size 64 --
 
 pca_classifier2 -- use pca to classify, more layers and lower lr
 python main.py --name pca_classifier2 --train_epoch 100 --BERT --batch_size 64 --GELU_2
+
+pca_classifier3 -- use pca to classify, 128 bs
+python main.py --name pca_classifier3 --train_epoch 100 --BERT --batch_size 128 --GELU_2
+
+pca_classifier4 -- use pca to classify, 64 bs
+python main.py --name pca_classifier4 --train_epoch 100 --BERT --batch_size 64 --GELU_2
+
+pca_classifier5 -- use pca to classify, 32 bs
+python main.py --name pca_classifier5 --train_epoch 100 --BERT --batch_size 32 --GELU_2

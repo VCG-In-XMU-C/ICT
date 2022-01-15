@@ -13,3 +13,9 @@ python inference.py --name torch_512_multi
 python inference.py --name pca_classifier --BERT --GELU_2 --sample_all
 
 python inference.py --name pca_classifier2 --BERT --GELU_2 --sample_all
+
+python inference.py --name pca_classifier3 --BERT --GELU_2 --sample_all
+
+python inference.py --name pca_classifier4 --BERT --GELU_2 --sample_all
+
+python inference.py --name pca_classifier5 --BERT --GELU_2 --sample_all
