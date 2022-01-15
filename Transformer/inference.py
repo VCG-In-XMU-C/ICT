@@ -17,62 +17,12 @@ import time
 import torchvision.transforms as transforms
 
 
-def save_result(path, result):
-    tmp = open(path, mode='w')
-    tmp.write(result)
-    tmp.close()
-
-
-if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
-    parser.add_argument('--GPU_ids', type=str, default='0')
-    parser.add_argument('--gpus', type=str, default=[0, 1])
-    parser.add_argument('--ckpt_path', type=str, default='/mnt/datadisk0/Transformer/')
-    parser.add_argument('--BERT', action='store_true', help='BERT model, Image Completion')
-    parser.add_argument('--image_url', type=str, default='/mnt/datadisk0/final/test/images/',
-                        help='the folder of image')
-    parser.add_argument('--mask_url', type=str, default='/mnt/datadisk0/final/test/masks/',
-                        help='the folder of mask')
-    parser.add_argument('--top_k', type=int, default=20)
-
-    parser.add_argument('--image_size', type=int, default=256, help='input sequence length: image_size*image_size')
-
-    parser.add_argument('--n_layer', type=int, default=16)
-    parser.add_argument('--n_head', type=int, default=8)
-    parser.add_argument('--n_embd', type=int, default=512)
-    parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
-
-    parser.add_argument('--save_url', type=str, default='./results/', help='save the output results')
-    parser.add_argument('--n_samples', type=int,default=4, help='sample cnt')
-
-    parser.add_argument('--sample_all', action='store_true', help='sample all pixel together, ablation use')
-    parser.add_argument('--skip_number', type=int, default=0,
-                        help='since the inference is slow, skip the image which has been inferenced')
-
-    parser.add_argument('--no_progressive_bar', action='store_true', help='')
-    parser.add_argument('--class_size', type=int, default=7, help='cls')
-    # parser.add_argument('--data_path',type=str,default='/home/ziyuwan/workspace/data/')
-
-    opts = parser.parse_args()
-
-    s_time = time.time()
-
-    # model_config=GPTConfig(512,32*32,
-    #                        embd_pdrop=0.0, resid_pdrop=0.0, 
-    #                        attn_pdrop=0.0, n_layer=14, n_head=8,
-    #                        n_embd=256,BERT=opts.BERT)
-
-    model_config = GPTConfig(16, embd_pdrop=0.0, resid_pdrop=0.0,
-                             attn_pdrop=0.0, n_layer=opts.n_layer, n_head=opts.n_head,
-                             n_embd=opts.n_embd, BERT=opts.BERT, use_gelu2=opts.GELU_2, class_size=opts.class_size)
-
+def test(epoch_str='best.pth'):
     # Load model
     IGPT_model = GPT(model_config)
-    ckpt_path = os.path.join(opts.ckpt_path, opts.name, '55.pth')
+    ckpt_path = os.path.join(opts.ckpt_path, opts.name, epoch_str)
     checkpoint = torch.load(ckpt_path)
-    
+
     if opts.ckpt_path.endswith('.pt'):
         IGPT_model.load_state_dict(checkpoint)
     else:
@@ -87,8 +37,8 @@ if __name__ == '__main__':
     mask_list = sorted(os.listdir(opts.mask_url))
     # mask_list=mask_list[-len(img_list):]
     if opts.skip_number > 0:
-        img_list = img_list[opts.skip_number-1:]
-        mask_list = mask_list[opts.skip_number-1:]
+        img_list = img_list[opts.skip_number - 1:]
+        mask_list = mask_list[opts.skip_number - 1:]
         print("Resume from %s" % (img_list[0]))
 
     gray_transforms = transforms.Compose([
@@ -154,9 +104,76 @@ if __name__ == '__main__':
 
     os.makedirs(cls_path, exist_ok=True)
     result_dir = os.path.join(cls_path, 'result.txt')
-    result_str = 'accuracy = %f' % (accuracy)
+    result_str = 'accuracy = %f' % accuracy
     print(result_str)
     save_result(result_dir, result_str)
-        
+
     e_time = time.time()
-    print("This test totally costs %.5f seconds" % (e_time-s_time))
+    print("This test totally costs %.5f seconds" % (e_time - s_time))
+    return accuracy
+
+
+def save_result(path, result):
+    tmp = open(path, mode='w')
+    tmp.write(result)
+    tmp.close()
+
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
+    parser.add_argument('--GPU_ids', type=str, default='0')
+    parser.add_argument('--gpus', type=str, default=[0, 1])
+    parser.add_argument('--ckpt_path', type=str, default='/mnt/datadisk0/Transformer/')
+    parser.add_argument('--BERT', action='store_true', help='BERT model, Image Completion')
+    parser.add_argument('--image_url', type=str, default='/mnt/datadisk0/final/test/images/',
+                        help='the folder of image')
+    parser.add_argument('--mask_url', type=str, default='/mnt/datadisk0/final/test/masks/',
+                        help='the folder of mask')
+    parser.add_argument('--top_k', type=int, default=20)
+
+    parser.add_argument('--image_size', type=int, default=256, help='input sequence length: image_size*image_size')
+
+    parser.add_argument('--n_layer', type=int, default=16)
+    parser.add_argument('--n_head', type=int, default=8)
+    parser.add_argument('--n_embd', type=int, default=512)
+    parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
+
+    parser.add_argument('--save_url', type=str, default='./results/', help='save the output results')
+    parser.add_argument('--n_samples', type=int,default=4, help='sample cnt')
+
+    parser.add_argument('--sample_all', action='store_true', help='sample all pixel together, ablation use')
+    parser.add_argument('--skip_number', type=int, default=0,
+                        help='since the inference is slow, skip the image which has been inferenced')
+
+    parser.add_argument('--no_progressive_bar', action='store_true', help='')
+    parser.add_argument('--class_size', type=int, default=7, help='cls')
+    # parser.add_argument('--data_path',type=str,default='/home/ziyuwan/workspace/data/')
+
+    opts = parser.parse_args()
+
+    s_time = time.time()
+
+    # model_config=GPTConfig(512,32*32,
+    #                        embd_pdrop=0.0, resid_pdrop=0.0, 
+    #                        attn_pdrop=0.0, n_layer=14, n_head=8,
+    #                        n_embd=256,BERT=opts.BERT)
+
+    model_config = GPTConfig(16, embd_pdrop=0.0, resid_pdrop=0.0,
+                             attn_pdrop=0.0, n_layer=opts.n_layer, n_head=opts.n_head,
+                             n_embd=opts.n_embd, BERT=opts.BERT, use_gelu2=opts.GELU_2, class_size=opts.class_size)
+
+    best = 0
+    best_index = 0
+    for i in range(100):
+        print('current best score is:', str(best))
+        r = test(str(i)+'.pth')
+        if r > best:
+            best = r
+            best_index = i
+
+            cls_path = os.path.join(opts.save_url, opts.name)
+            os.makedirs(cls_path, exist_ok=True)
+            result_dir = os.path.join(cls_path, 'final_result.txt')
+            result_str = 'In epoch %d, best accuracy = %f' % (best_index, best)
