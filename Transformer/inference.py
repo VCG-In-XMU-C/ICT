@@ -16,35 +16,43 @@ import os
 import time
 import torchvision.transforms as transforms
 
+
+def save_result(path, result):
+    tmp = open(path, mode='w')
+    tmp.write(result)
+    tmp.close()
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
     parser.add_argument('--GPU_ids', type=str, default='0')
     parser.add_argument('--gpus', type=str, default=[0, 1])
-    parser.add_argument('--ckpt_path', type=str, default='./ckpt')
+    parser.add_argument('--ckpt_path', type=str, default='/mnt/datadisk0/Transformer/')
     parser.add_argument('--BERT', action='store_true', help='BERT model, Image Completion')
-    parser.add_argument('--image_url', type=str, default='D:\\Data\\FaceScape_dist_list\\test\\',
+    parser.add_argument('--image_url', type=str, default='/mnt/datadisk0/final/test/images/',
                         help='the folder of image')
-    parser.add_argument('--mask_url', type=str, default='D:\\Data\\FaceScape_dist_list\\masks\\',
+    parser.add_argument('--mask_url', type=str, default='/mnt/datadisk0/final/test/masks/',
                         help='the folder of mask')
-    parser.add_argument('--top_k', type=int, default=100)
+    parser.add_argument('--top_k', type=int, default=20)
 
     parser.add_argument('--image_size', type=int, default=256, help='input sequence length: image_size*image_size')
 
-    parser.add_argument('--n_layer', type=int, default=12)
+    parser.add_argument('--n_layer', type=int, default=14)
     parser.add_argument('--n_head', type=int, default=8)
-    parser.add_argument('--n_embd', type=int, default=2048)
+    parser.add_argument('--n_embd', type=int, default=512)
     parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
 
     parser.add_argument('--save_url', type=str, default='./results/', help='save the output results')
-    parser.add_argument('--n_samples', type=int,default=8, help='sample cnt')
+    parser.add_argument('--n_samples', type=int,default=4, help='sample cnt')
 
     parser.add_argument('--sample_all', action='store_true', help='sample all pixel together, ablation use')
     parser.add_argument('--skip_number', type=int, default=0,
                         help='since the inference is slow, skip the image which has been inferenced')
 
     parser.add_argument('--no_progressive_bar', action='store_true', help='')
+    parser.add_argument('--class_size', type=int, default=7, help='cls')
     # parser.add_argument('--data_path',type=str,default='/home/ziyuwan/workspace/data/')
 
     opts = parser.parse_args()
@@ -70,6 +78,7 @@ if __name__ == '__main__':
     else:
         IGPT_model.load_state_dict(checkpoint['model'])
 
+    IGPT_model.eval()
     IGPT_model.cuda()
 
     n_samples = opts.n_samples
@@ -89,6 +98,8 @@ if __name__ == '__main__':
     ])
     normalize = transforms.Normalize((0.5,), (0.5,))
 
+    cls_list = []
+    target_list = []
     for img_name in img_list:
         for mask_name in mask_list:
             image_url = os.path.join(opts.image_url, img_name)
@@ -106,22 +117,26 @@ if __name__ == '__main__':
             mask = mask.reshape(1, 1, opts.image_size, opts.image_size).cuda()
             masked = masked.reshape(1, 1, opts.image_size, opts.image_size).cuda()
 
-            fake, loss = IGPT_model(masked, x)
+            target_list.append(int(image_url[-6:-4]))
 
-            current_url = os.path.join(opts.save_url, opts.name)
-            os.makedirs(current_url, exist_ok=True)
-            prefix = img_name.replace('png', '')
-            suffix = mask_name.replace('png', '')
-            path_str = current_url + '/' + prefix + '_' + suffix + '_'
+            _, _, _, cls = IGPT_model(masked)
 
-            im_fake = util.tensor2im(fake)
-            im_masked = util.tensor2im(masked)
-            im_x = util.tensor2im(x)
-            im_mask = util.tensor2im(mask)
-            util.save_image(im_fake, path_str + 'im_fake.png', aspect_ratio=1)
-            util.save_image(im_masked, path_str + 'im_input.png', aspect_ratio=1)
-            util.save_image(im_x, path_str + 'im_gt.png', aspect_ratio=1)
-            util.save_image(im_mask, path_str + 'im_mask.png', aspect_ratio=1)
+            cls_list.append(cls)
+
+            # current_url = os.path.join(opts.save_url, opts.name)
+            # os.makedirs(current_url, exist_ok=True)
+            # prefix = img_name.replace('png', '')
+            # suffix = mask_name.replace('png', '')
+            # path_str = current_url + '/' + prefix + '_' + suffix + '_'
+            #
+            # im_fake = util.tensor2im(fake)
+            # im_masked = util.tensor2im(masked)
+            # im_x = util.tensor2im(x)
+            # im_mask = util.tensor2im(mask)
+            # util.save_image(im_fake, path_str + 'im_fake.png', aspect_ratio=1)
+            # util.save_image(im_masked, path_str + 'im_input.png', aspect_ratio=1)
+            # util.save_image(im_x, path_str + 'im_gt.png', aspect_ratio=1)
+            # util.save_image(im_mask, path_str + 'im_mask.png', aspect_ratio=1)
 
             # for i in range(n_samples):
             #
@@ -131,6 +146,16 @@ if __name__ == '__main__':
             #     tmp=Image.fromarray(current_img)
             #     tmp.save(os.path.join(current_url,img_name))
             print("Finish %s" % img_name)
+
+        cls_path = os.path.join(opts.save_url, opts.name)
+        sub = np.subtract(cls_list, target_list)
+        sub = (sub == 0)
+        accuracy = sub.sum() / len(cls_list)
+
+        result_dir = os.path.join(cls_path, 'result.txt')
+        result_str = 'accuracy = %f' % (accuracy)
+        print(result_str)
+        save_result(result_dir, result_str)
         
         e_time = time.time()
         print("This test totally costs %.5f seconds" % (e_time-s_time))

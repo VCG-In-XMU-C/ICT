@@ -7,7 +7,6 @@ import numpy as np
 import os
 import time
 
-from utils import util
 import torch
 import torch.optim as optim
 from torch.optim.lr_scheduler import LambdaLR
@@ -16,7 +15,7 @@ import torch.distributed as dist
 
 import torch.multiprocessing as mp
 from torch.utils.data.distributed import DistributedSampler
-from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.nn import DataParallel
 from torch.cuda.amp import autocast, GradScaler
 
 logger = logging.getLogger(__name__)
@@ -43,21 +42,17 @@ class TrainerConfig:
 
 
 class Trainer:
-
-    def __init__(self, model, train_dataset, test_dataset, config, gpu, gpus):
+    def __init__(self, model, train_dataset, test_dataset, config, gpu):
         self.model = model
         self.train_dataset = train_dataset
         self.test_dataset = test_dataset
         self.config = config
         self.device = gpu
-        self.gpus = gpus
-
         self.model = model.cuda(gpu)
 
     def save_checkpoint(self, epoch, optim, tokens, validation_loss, save_name):
-        # DataParallel wrappers keep raw model object in .module attribute
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
-        save_url = os.path.join(self.config.ckpt_path, save_name+'.pth')
+        save_url = os.path.join(self.config.ckpt_path, save_name + '.pth')
         logger.info("saving %s", save_url)
         torch.save({'model': raw_model.state_dict(),
                     'epoch': epoch,
@@ -69,7 +64,7 @@ class Trainer:
         if os.path.exists(resume_path):
             # data = torch.load(resume_path, map_location = lambda storage, loc: set_device(storage))
             # data = torch.load(resume_path)
-            data = torch.load(resume_path, map_location='cuda:{}'.format(self.device))
+            data = torch.load(resume_path, map_location='{}'.format(self.device))
             self.model.load_state_dict(data['model'])
             print('Finished reloading the Epoch %d model' % (data['epoch']))
             return data
@@ -78,7 +73,6 @@ class Trainer:
         return None
 
     def train(self, loaded_ckpt):
-
         model, config = self.model, self.config
         raw_model = model.module if hasattr(self.model, "module") else model
         optimizer = raw_model.configure_optimizers(config)
@@ -95,16 +89,13 @@ class Trainer:
             print('Warnning: There is no previous optimizer found. An initialized optimizer will be used.')
 
         # model = DDP(self.model,device_ids=[self.global_rank],output_device=self.global_rank,broadcast_buffers=True)
-        # model = DDP(self.model, device_ids=[self.device])
-        model = torch.nn.DataParallel(self.model, device_ids=[self.gpus])
+        model = DataParallel(self.model, device_ids=[0])
 
         # TODO: Use different seeds to initialize each worker. (This issue is caused by the bug of pytorch itself)
         train_loader = DataLoader(self.train_dataset, shuffle=False, pin_memory=True,
-                            batch_size=config.batch_size, # BS of each GPU
-                            num_workers=config.num_workers)
+                                  batch_size=config.batch_size, num_workers=config.num_workers)
         test_loader = DataLoader(self.test_dataset, shuffle=False, pin_memory=True,
-                            batch_size=config.batch_size, # BS of each GPU
-                            num_workers=config.num_workers)
+                                 batch_size=config.batch_size, num_workers=config.num_workers)
 
         def run_epoch(split):
             is_train = split == 'train'
@@ -112,42 +103,44 @@ class Trainer:
             loader = train_loader if is_train else test_loader
 
             losses = []
+            accuracys = []
             scaler = GradScaler()
-            for it, (x, y, z) in enumerate(loader):
+            for it, (x, y, _, cls) in enumerate(loader):
 
                 # place data on the correct device
                 x = x.to(self.device)
-                y = y.to(self.device)
+                # y = y.to(self.device)
+                cls = cls.to(self.device)
 
                 # forward the model
                 if self.config.AMP:  # use AMP
                     with autocast():
                         with torch.set_grad_enabled(is_train):
                             if self.config.BERT:
-                                fake, loss = model(x, x, y)
-                            else:
-                                fake, loss = model(x, y)
+                                logits, loss = model(x, cls)
+                            # else:
+                            #     logits, loss = model(x, y)
                             loss = loss.mean()  # collapse all losses if they are scattered on multiple gpus
                             losses.append(loss.item())
                 else:
                     with torch.set_grad_enabled(is_train):
                         if self.config.BERT:
-                            fake, loss = model(x, x, y)
-                        else:
-                            fake, loss = model(x, y)
+                            logits, loss, accuracy, _ = model(x, cls)
+                        # else:
+                        #     logits, loss = model(x, y)
                         loss = loss.mean()  # collapse all losses if they are scattered on multiple gpus
+                        accuracys.append(accuracy.cpu())
                         losses.append(loss.item())
 
                 if is_train:
 
-                    warm_up = True
                     # backprop and update the parameters
                     model.zero_grad()
 
                     if self.config.AMP:
                         scaler.scale(loss).backward()
 
-                        ## AMP+Gradient Clip
+                        # AMP+Gradient Clip
                         scaler.unscale_(optimizer)
                         torch.nn.utils.clip_grad_norm_(model.parameters(), config.grad_norm_clip)
 
@@ -160,14 +153,13 @@ class Trainer:
 
                     # decay the learning rate based on our progress
                     if config.lr_decay:
-                        self.tokens += (x.shape[0] * 16)  # number of tokens processed this step (i.e. label is not -100)
+                        self.tokens += (x >= 0).sum()  # number of tokens processed this step (i.e. label is not -100)
                         # print(self.tokens)
                         # print(config.warmup_tokens)
                         if self.tokens < config.warmup_tokens:
                             # linear warmup
                             lr_mult = float(self.tokens) / float(max(1, config.warmup_tokens))
                         else:
-                            warm_up = False
                             # cosine learning rate decay
                             progress = float(self.tokens - config.warmup_tokens) / float(
                                 max(1, config.final_tokens - config.warmup_tokens))
@@ -178,51 +170,48 @@ class Trainer:
                     else:
                         lr = config.learning_rate
 
+                    # print(epoch)
+                    # print(it)
+                    # print(loss)
                     if it % self.config.print_freq == 0:
-                        im_fake = util.tensor2im(fake)
-                        im_x = util.tensor2im(x)
-                        im_y = util.tensor2im(y)
-                        im_z = util.tensor2im(z)
-                        util.save_image(im_fake, './im_fake.png', aspect_ratio=1)
-                        util.save_image(im_x, './im_input.png', aspect_ratio=1)
-                        util.save_image(im_y, './im_gt.png', aspect_ratio=1)
-                        util.save_image(im_z, './im_mask.png', aspect_ratio=1)
-                        print(f"epoch {epoch+1} iter {it}: train loss {loss.item():.5f}. lr {lr:e} warm up {warm_up}")
+                        print(f"epoch {epoch + 1} iter {it}: train loss {torch.mean(loss).item():.5f} "
+                              f"accuracy {accuracy:.1f} lr {lr:e}")
+                        # print(epoch+1, it, ':', loss.item(), accuracy, lr)
 
             if not is_train:
                 test_loss = float(np.mean(losses))
+                avg_accuracy = float(np.mean(accuracys))
                 logger.info("test loss: %f", test_loss)
-                return test_loss
+                return test_loss, avg_accuracy
 
         if loaded_ckpt is None:
             self.tokens = 0  # counter used for learning rate decay
             best_loss = float('inf')
-                
+
         for epoch in range(config.max_epochs):
 
             if previous_epoch != -1 and epoch <= previous_epoch:
                 continue
 
             if epoch == previous_epoch + 1:
-                print("Resume from Epoch %d" % (epoch))
-
-            # self.train_dataset.set_epoch(epoch)  # Shuffle each epoch
+                print("Resume from Epoch %d" % epoch)
 
             epoch_start = time.time()
             run_epoch('train')
             if self.test_dataset is not None:
-                test_loss = run_epoch('test')
-            
-            print("Epoch: %d, test loss: %f, time for one epoch: %d seconds" % (epoch, test_loss, time.time() - epoch_start))
+                test_loss, accuracy = run_epoch('test')
+
+            print("Epoch: %d, test loss: %f, accuracy: %f, time for one epoch: "
+                  "%d seconds" % (epoch, test_loss, accuracy, time.time() - epoch_start))
             # supports early stopping based on the test loss, or just save always if no test set is provided
             good_model = self.test_dataset is None or test_loss < best_loss
-            if self.config.ckpt_path is not None and good_model:  # Validation on the global_rank==0 process
-
+            if self.config.ckpt_path is not None and good_model:
                 best_loss = test_loss
-                print("current best epoch is %d" % (epoch))
+                print("current best epoch is %d" % epoch)
                 self.save_checkpoint(epoch, optimizer, self.tokens, best_loss, save_name='best')
-            
+
             if not np.isnan(test_loss):
+                self.save_checkpoint(epoch, optimizer, self.tokens, best_loss, save_name=str(epoch))
                 self.save_checkpoint(epoch, optimizer, self.tokens, best_loss, save_name='latest')
             else:
                 print('NaN happens, try to reload the previous normal checkpoint')

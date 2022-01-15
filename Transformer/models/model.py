@@ -140,12 +140,12 @@ class GPT(nn.Module):
         # if not config.BERT:
         #     self.sos = torch.nn.Parameter(torch.zeros(config.n_embd))
         #     nn.init.normal_(self.sos)
-
-        self.NUM_PCA_COMPONENTS = 512
+        self.sos = torch.nn.Parameter(torch.zeros(config.n_embd))
+        self.NUM_PCA_COMPONENTS = 256
 
         # input embedding stem
         self.tok_emb = nn.Linear(self.NUM_PCA_COMPONENTS, config.n_embd, bias=False)
-        self.pos_emb = nn.Parameter(torch.zeros(1, config.block_size, config.n_embd))
+        self.pos_emb = nn.Parameter(torch.zeros(1, config.block_size+1, config.n_embd))
         self.drop = nn.Dropout(config.embd_pdrop)
         # transformer
         if config.use_gelu2:
@@ -155,16 +155,16 @@ class GPT(nn.Module):
         # decoder head
         self.ln_f = nn.LayerNorm(config.n_embd)
         self.head = nn.Linear(config.n_embd, self.NUM_PCA_COMPONENTS, bias=False)
+        self.cls = nn.Linear(config.n_embd, config.class_size, bias=False)
 
         self.block_size = config.block_size
         self.config = config
 
         self.apply(self._init_weights)
 
-        self.criterionL1 = torch.nn.L1Loss()
+        # self.criterionL1 = torch.nn.L1Loss()
 
-
-        self.pca_model = joblib.load('.\\pca_%d.m' % self.NUM_PCA_COMPONENTS)  # load trained pca model
+        self.pca_model = joblib.load('./pca_%d.m' % self.NUM_PCA_COMPONENTS)  # load trained pca model
         self.pca_components = torch.from_numpy(self.pca_model.components_).cuda()
         self.pca_mean = torch.from_numpy(self.pca_model.mean_).cuda()
         self.pca_inverse = self.pca_components.T.cuda()
@@ -207,7 +207,7 @@ class GPT(nn.Module):
         # special case the position embedding parameter in the root GPT module as not decayed
         no_decay.add('pos_emb')
         # if not self.config.BERT:
-        #     no_decay.add('sos')
+        no_decay.add('sos')
 
         # validate that we considered every parameter
         param_dict = {pn: p for pn, p in self.named_parameters()}
@@ -225,7 +225,7 @@ class GPT(nn.Module):
         optimizer = torch.optim.AdamW(optim_groups, lr=train_config.learning_rate, betas=train_config.betas)
         return optimizer
 
-    def forward(self, input_image, targets=None, masks=None):
+    def forward(self, input_image, target_cls=None):
         # print(input_image.shape)
         # print(targets.shape)
         # shape of input image: b, 1, 256, 256
@@ -248,6 +248,10 @@ class GPT(nn.Module):
 
         # forward the GPT model
         token_embeddings = self.tok_emb(data) # each index maps to a (learnable) vector
+
+        sos = torch.ones(b, 1, self.config.n_embd, device=data.device) * self.sos
+        token_embeddings = torch.cat([sos, token_embeddings], axis=1)
+
         # token_embeddings = torch.cat([sos, token_embeddings[:, :-1, :]], axis=1)
 
         # if self.config.BERT:
@@ -258,25 +262,29 @@ class GPT(nn.Module):
         # sos = torch.ones(b, 1, self.config.n_embd, device=data.device) * self.sos
         # token_embeddings = torch.cat([sos, token_embeddings[:, :-1, :]], axis=1)
 
-        position_embeddings = self.pos_emb[:, :t, :]  # each position maps to a (learnable) vector
+        position_embeddings = self.pos_emb[:, :t+1, :]  # each position maps to a (learnable) vector
 
         x = self.drop(token_embeddings + position_embeddings)
         x = self.blocks(x)
         x = self.ln_f(x)
-        logits = self.head(x)
+        logits = self.head(x[:,1:,:])
+        cls = self.cls(x[:, 0, :])
+        final_cls = cls.argmax(dim=1).view(-1)
+        loss = None
+        accuracy = None
         # shape of logits: b, 16, 512
         # logits = rearrange(logits, 'b 16 512 -> (b 16) 512')
-        fake = rearrange(logits, 'b n p -> (b n) p', n=16)
+        # fake = rearrange(logits, 'b n p -> (b n) p', n=16)
         # shape of logits: b * 16, 512
-        fake = torch.mm(fake, self.pca_components) + self.pca_mean
+        # fake = torch.mm(fake, self.pca_components) + self.pca_mean
         # fake = torch.from_numpy(self.pca_model.inverse_transform(fake.detach().cpu())).to(device)
         # fake = fake.type(torch.float32)
         # shape of logits: b * 16, 4096
-        fake = rearrange(fake, '(b h w) (p1 p2) -> b 1 (h p1) (w p2)', w=4, h=4, p1=64)
+        # fake = rearrange(fake, '(b h w) (p1 p2) -> b 1 (h p1) (w p2)', w=4, h=4, p1=64)
 
         # if we are given some desired targets also calculate the loss
         loss = None
-        if targets is not None:
+        if target_cls is not None:
             # if self.config.BERT:
             #     loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1),reduce=False)
             #
@@ -293,6 +301,12 @@ class GPT(nn.Module):
             #         loss = torch.sum(loss) / torch.sum(masks)
             # else:
             # loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
-            loss = self.criterionL1(fake, targets)
+            # loss = self.criterionL1(fake, targets)
+            target_cls_tmp = target_cls.view(-1)
+            error = final_cls - target_cls_tmp
+            correct_num = (error == 0).sum()
+            accuracy = correct_num / final_cls.shape[0]
+            loss = F.cross_entropy(cls.view(-1, cls.size(-1)), target_cls, reduce=False)
+            loss = torch.mean(loss)
 
-        return fake, loss
+        return logits, loss, accuracy, final_cls

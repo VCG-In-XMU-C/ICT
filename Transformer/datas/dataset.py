@@ -16,9 +16,8 @@ import torchvision.transforms as transforms
 # TODO: Add random crop and random flip [√]
 def read_img(img_url, image_size, is_train):
     img = Image.open(img_url).convert("L")
-
-    if random.random() > 0.5 and is_train:
-        img = img.transpose(Image.FLIP_LEFT_RIGHT)
+    # if random.random() > 0.5 and is_train:
+    #     img = img.transpose(Image.FLIP_LEFT_RIGHT)
     return img
 
 
@@ -75,11 +74,11 @@ class FaceScapeDataset(Dataset):
             # mask = (mask > 0).astype(np.uint8) * 255
             # mask = Image.fromarray(mask).convert("L")
 
-        if self.is_train:
-            if random.random() > 0.5:
-                mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
-            if random.random() > 0.5:
-                mask = mask.transpose(Image.FLIP_TOP_BOTTOM)
+        # if self.is_train:
+        #     if random.random() > 0.5:
+        #         mask = mask.transpose(Image.FLIP_LEFT_RIGHT)
+            # if random.random() > 0.5:
+            #     mask = mask.transpose(Image.FLIP_TOP_BOTTOM)
 
         mask = self.gray_transforms(mask)
 
@@ -98,10 +97,11 @@ class FaceScapeDataset(Dataset):
         image = self.gray_transforms(image)
         image = self.normalize(image)
         masked = mask * image
+        cls = int(selected_img_url[-6:-4])
 
         # x = torch.from_numpy(np.array(x)).view(-1).float()  # flatten out all pixels
         # perm用于重排序，比如用一个倒序的列表就可以把data倒序掉，用这个写法可以很easy完成序列中的顺序调换
         # a[0]：取a序列的第一个元素，a[[0,1]]，按顺序取a序列的第1，2个元素
         # x = x[self.perm].float() # reshuffle pixels with any fixed permutation and -> float
 
-        return masked, image, mask
+        return masked, image, mask, cls
