@@ -104,7 +104,7 @@ def test(epoch_str='best.pth'):
 
     os.makedirs(cls_path, exist_ok=True)
     result_dir = os.path.join(cls_path, 'result.txt')
-    result_str = 'accuracy = %f' % accuracy
+    result_str = 'In epoch %s, accuracy = %f' % (epoch_str, accuracy)
     print(result_str)
     save_result(result_dir, result_str)
 
