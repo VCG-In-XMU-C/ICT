@@ -90,7 +90,7 @@ class Trainer:
             print('Warnning: There is no previous optimizer found. An initialized optimizer will be used.')
 
         # model = DDP(self.model,device_ids=[self.global_rank],output_device=self.global_rank,broadcast_buffers=True)
-        model = DataParallel(self.model, device_ids=[self.device])
+        model = DataParallel(self.model, device_ids=[0])
                     
         # TODO: Use different seeds to initialize each worker. (This issue is caused by the bug of pytorch itself)
         train_loader = DataLoader(self.train_dataset, shuffle=False, pin_memory=True,
@@ -171,9 +171,13 @@ class Trainer:
                     else:
                         lr = config.learning_rate
 
+                    # print(epoch)
+                    # print(it)
+                    # print(loss)
                     if it % self.config.print_freq == 0:
-                        print(f"epoch {epoch+1} iter {it}: train loss {loss.item():.5f} "
+                        print(f"epoch {epoch + 1} iter {it}: train loss {torch.mean(loss).item():.5f} "
                               f"accuracy {accuracy:.1f} lr {lr:e}")
+                        # print(epoch+1, it, ':', loss.item(), accuracy, lr)
 
             if not is_train:
                 test_loss = float(np.mean(losses))

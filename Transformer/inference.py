@@ -36,11 +36,11 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
     parser.add_argument('--GPU_ids', type=str, default='1')
-    parser.add_argument('--ckpt_path', type=str, default='/mnt/datadisk0/Transformer/')
+    parser.add_argument('--ckpt_path', type=str, default='/media/ming-t/F83438063437C702/will/ckpt//')
     parser.add_argument('--BERT', action='store_true', help='BERT model, Image Completion')
-    parser.add_argument('--image_url', type=str, default='/mnt/datadisk0/final/test/images/',
+    parser.add_argument('--image_url', type=str, default='/media/ming-t/F83438063437C702/will/final/test/images/',
                         help='the folder of image')
-    parser.add_argument('--mask_url', type=str, default='/mnt/datadisk0/final/small_masks/',
+    parser.add_argument('--mask_url', type=str, default='/media/ming-t/F83438063437C702/will/final/small_masks/',
                         help='the folder of mask')
     parser.add_argument('--top_k', type=int, default=20)
 
@@ -52,7 +52,7 @@ if __name__=='__main__':
     parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
 
     parser.add_argument('--save_url', type=str, default='./result', help='save the output results')
-    parser.add_argument('--n_samples', type=int, default=3, help='sample cnt')
+    parser.add_argument('--n_samples', type=int, default=4, help='sample cnt')
 
     parser.add_argument('--sample_all', action='store_true', help='sample all pixel together, ablation use')
     parser.add_argument('--skip_number', type=int, default=0,

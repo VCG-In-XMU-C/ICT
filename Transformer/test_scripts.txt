@@ -19,3 +19,5 @@ python inference.py --name final_mask_test --BERT --GELU_2 --sample_all
 python inference.py --name final_full --BERT --GELU_2 --sample_all
 
 python inference.py --name adjust_14 --BERT --GELU_2 --sample_all
+
+python inference.py --name adjust_14_noMLM --BERT --GELU_2 --sample_all
