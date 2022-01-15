@@ -12,3 +12,6 @@ python main.py --name torch_512_multi
 
 pca_classifier -- use pca to classify
 python main.py --name pca_classifier --train_epoch 100 --BERT --batch_size 64 --GELU_2
+
+pca_classifier2 -- use pca to classify, more layers and lower lr
+python main.py --name pca_classifier2 --train_epoch 100 --BERT --batch_size 64 --GELU_2

@@ -9,3 +9,7 @@ python inference.py --name torch_1024
 
 torch_512_multi -- 512 torch pca version
 python inference.py --name torch_512_multi
+
+python inference.py --name pca_classifier --BERT --GELU_2 --sample_all
+
+python inference.py --name pca_classifier2 --BERT --GELU_2 --sample_all

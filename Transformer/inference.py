@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--image_size', type=int, default=256, help='input sequence length: image_size*image_size')
 
-    parser.add_argument('--n_layer', type=int, default=14)
+    parser.add_argument('--n_layer', type=int, default=16)
     parser.add_argument('--n_head', type=int, default=8)
     parser.add_argument('--n_embd', type=int, default=512)
     parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
@@ -66,11 +66,11 @@ if __name__ == '__main__':
 
     model_config = GPTConfig(16, embd_pdrop=0.0, resid_pdrop=0.0,
                              attn_pdrop=0.0, n_layer=opts.n_layer, n_head=opts.n_head,
-                             n_embd=opts.n_embd, BERT=opts.BERT, use_gelu2=opts.GELU_2)
+                             n_embd=opts.n_embd, BERT=opts.BERT, use_gelu2=opts.GELU_2, class_size=opts.class_size)
 
     # Load model
     IGPT_model = GPT(model_config)
-    ckpt_path = os.path.join(opts.ckpt_path, opts.name, 'best.pth')
+    ckpt_path = os.path.join(opts.ckpt_path, opts.name, '55.pth')
     checkpoint = torch.load(ckpt_path)
     
     if opts.ckpt_path.endswith('.pt'):
@@ -121,7 +121,7 @@ if __name__ == '__main__':
 
             _, _, _, cls = IGPT_model(masked)
 
-            cls_list.append(cls)
+            cls_list.append(cls.cpu())
 
             # current_url = os.path.join(opts.save_url, opts.name)
             # os.makedirs(current_url, exist_ok=True)
@@ -147,15 +147,16 @@ if __name__ == '__main__':
             #     tmp.save(os.path.join(current_url,img_name))
             print("Finish %s" % img_name)
 
-        cls_path = os.path.join(opts.save_url, opts.name)
-        sub = np.subtract(cls_list, target_list)
-        sub = (sub == 0)
-        accuracy = sub.sum() / len(cls_list)
+    cls_path = os.path.join(opts.save_url, opts.name)
+    sub = np.subtract(cls_list, target_list)
+    sub = (sub == 0)
+    accuracy = sub.sum() / len(cls_list)
 
-        result_dir = os.path.join(cls_path, 'result.txt')
-        result_str = 'accuracy = %f' % (accuracy)
-        print(result_str)
-        save_result(result_dir, result_str)
+    os.makedirs(cls_path, exist_ok=True)
+    result_dir = os.path.join(cls_path, 'result.txt')
+    result_str = 'accuracy = %f' % (accuracy)
+    print(result_str)
+    save_result(result_dir, result_str)
         
-        e_time = time.time()
-        print("This test totally costs %.5f seconds" % (e_time-s_time))
+    e_time = time.time()
+    print("This test totally costs %.5f seconds" % (e_time-s_time))
