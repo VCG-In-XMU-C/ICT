@@ -48,6 +48,7 @@ def test(epoch_str='best.pth'):
     ])
     normalize = transforms.Normalize((0.5,), (0.5,))
 
+    dic = dict()
     cls_list = []
     target_list = []
     for img_name in img_list:
@@ -66,12 +67,14 @@ def test(epoch_str='best.pth'):
             x = x.reshape(1, 1, opts.image_size, opts.image_size).cuda()
             mask = mask.reshape(1, 1, opts.image_size, opts.image_size).cuda()
             masked = masked.reshape(1, 1, opts.image_size, opts.image_size).cuda()
+            image_name = img_name + '_m' + mask_name[-6:-4]
 
             target_list.append(int(image_url[-6:-4]))
 
             _, _, _, cls = IGPT_model(masked)
 
             cls_list.append(cls.cpu())
+            dic[image_name] = cls.cpu()
 
             # current_url = os.path.join(opts.save_url, opts.name)
             # os.makedirs(current_url, exist_ok=True)
@@ -107,6 +110,9 @@ def test(epoch_str='best.pth'):
     result_str = 'In epoch %s, accuracy = %f' % (epoch_str, accuracy)
     print(result_str)
     save_result(result_dir, result_str)
+
+    dic_dir = os.path.join(cls_path, 'dic.npy')
+    np.save(dic_dir, dic)
 
     e_time = time.time()
     print("This test totally costs %.5f seconds" % (e_time - s_time))
@@ -166,15 +172,16 @@ if __name__ == '__main__':
 
     best = 0
     best_index = 0
-    for i in range(100):
-        print('current best score is:', str(best))
-        r = test(str(i)+'.pth')
-        if r > best:
-            best = r
-            best_index = i
-
-            cls_path = os.path.join(opts.save_url, opts.name)
-            os.makedirs(cls_path, exist_ok=True)
-            result_dir = os.path.join(cls_path, 'final_result.txt')
-            result_str = 'In epoch %d, best accuracy = %f' % (best_index, best)
-            save_result(result_dir, result_str)
+    test(str(75)+'.pth')
+    # for i in range(100):
+    #     print('current best score is:', str(best))
+    #     r = test(str(i)+'.pth')
+    #     if r > best:
+    #         best = r
+    #         best_index = i
+    #
+    #         cls_path = os.path.join(opts.save_url, opts.name)
+    #         os.makedirs(cls_path, exist_ok=True)
+    #         result_dir = os.path.join(cls_path, 'final_result.txt')
+    #         result_str = 'In epoch %d, best accuracy = %f' % (best_index, best)
+    #         save_result(result_dir, result_str)
