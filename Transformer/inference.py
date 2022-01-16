@@ -52,7 +52,7 @@ if __name__=='__main__':
     parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
 
     parser.add_argument('--save_url', type=str, default='./result', help='save the output results')
-    parser.add_argument('--n_samples', type=int, default=3, help='sample cnt')
+    parser.add_argument('--n_samples', type=int, default=4, help='sample cnt')
 
     parser.add_argument('--sample_all', action='store_true', help='sample all pixel together, ablation use')
     parser.add_argument('--skip_number', type=int, default=0,
@@ -78,7 +78,7 @@ if __name__=='__main__':
 
     # Load model
     IGPT_model = GPT(model_config)
-    ckpt_path = os.path.join(opts.ckpt_path, opts.name, '79.pth')
+    ckpt_path = os.path.join(opts.ckpt_path, opts.name, 'best.pth')
     checkpoint = torch.load(ckpt_path)
     
     if opts.ckpt_path.endswith('.pt'):
@@ -100,9 +100,9 @@ if __name__=='__main__':
         print("Resume from %s" % (img_list[0]))
 
     if opts.BERT:
-        cls_list = []
-        target_list = []
-        m_list = []
+        # cls_list = []
+        # target_list = []
+        # m_list = []
         ssim_list = 0
         psnr_list = 0
         dataset_size = len(img_list) * len(mask_list)
@@ -112,8 +112,8 @@ if __name__=='__main__':
                 #     print("### Something Wrong ###")
 
                 image_url = os.path.join(opts.image_url, x_name)
-                m_list.append(int(y_name[-6:-4]))
-                target_list.append(int(image_url[-6:-4]))
+                # m_list.append(int(y_name[-6:-4]))
+                # target_list.append(int(image_url[-6:-4]))
                 input_image = Image.open(image_url).convert("L")
                 x = input_image.resize((opts.image_size, opts.image_size), resample=Image.BILINEAR)
                 x = torch.from_numpy(np.array(x)).view(-1)
@@ -159,7 +159,7 @@ if __name__=='__main__':
                                          num_sample=n_samples, top_k=opts.top_k, mask=b_tensor,
                                          no_bar=opts.no_progressive_bar)
 
-                cls_list.append(cls[0].cpu())
+                # cls_list.append(cls[0].cpu())
 
                 for i in range(n_samples):
                     current_url = os.path.join(opts.save_url, opts.name, 'condition_%d' % (i + 1))
@@ -180,18 +180,18 @@ if __name__=='__main__':
                 print("Finish %s" % img_name)
 
         cls_path = os.path.join(opts.save_url, opts.name)
-        np.save(os.path.join(cls_path, 'cls.npy'), cls_list)
-        np.save(os.path.join(cls_path, 'target.npy'), target_list)
-        np.save(os.path.join(cls_path, 'mask.npy'), m_list)
+        # np.save(os.path.join(cls_path, 'cls.npy'), cls_list)
+        # np.save(os.path.join(cls_path, 'target.npy'), target_list)
+        # np.save(os.path.join(cls_path, 'mask.npy'), m_list)
 
-        sub = np.subtract(cls_list, target_list)
-        sub = (sub == 0)
-        accuracy = sub.sum() / len(cls_list)
+        # sub = np.subtract(cls_list, target_list)
+        # sub = (sub == 0)
+        # accuracy = sub.sum() / len(cls_list)
 
         average_ssim = ssim_list / dataset_size
         average_psnr = psnr_list / dataset_size
         result_dir = os.path.join(cls_path, 'result.txt')
-        result_str = 'ssim = %f, psnr = %f, accuracy = %f' % (average_ssim, average_psnr, accuracy)
+        result_str = 'ssim = %f, psnr = %f' % (average_ssim, average_psnr)
         print(result_str)
         save_result(result_dir, result_str)
 

@@ -139,7 +139,7 @@ class GPT(nn.Module):
 
         # input embedding stem
         self.tok_emb = nn.Embedding(config.vocab_size, config.n_embd)
-        self.pos_emb = nn.Parameter(torch.zeros(1, config.block_size+1, config.n_embd))
+        self.pos_emb = nn.Parameter(torch.zeros(1, config.block_size, config.n_embd))
         self.drop = nn.Dropout(config.embd_pdrop)
         # transformer
         if config.use_gelu2:
@@ -223,26 +223,26 @@ class GPT(nn.Module):
 
         masks = masks.unsqueeze(2)
         token_embeddings = token_embeddings * masks
-        sos = torch.ones(b, 1, self.config.n_embd, device=idx.device) * self.sos
-        token_embeddings = torch.cat([sos, token_embeddings], axis=1)
+        # sos = torch.ones(b, 1, self.config.n_embd, device=idx.device) * self.sos
+        # token_embeddings = torch.cat([sos, token_embeddings], axis=1)
 
-        position_embeddings = self.pos_emb[:, :t+1, :] # each position maps to a (learnable) vector
+        position_embeddings = self.pos_emb[:, :t, :] # each position maps to a (learnable) vector
 
         x = self.drop(token_embeddings + position_embeddings)
         x = self.blocks(x)
         x = self.ln_f(x)
-        logits = self.head(x[:, 1:, :])
-        cls = self.cls(x[:, 0, :])
+        logits = self.head(x)
+        # cls = self.cls(x[:, 0, :])
         # print(cls.shape)
         # print(cls)
-        final_cls = cls.argmax(dim=1).view(-1)
+        # final_cls = cls.argmax(dim=1).view(-1)
         # print(accuracy)
         # print(final_cls)
         # input()
 
         # if we are given some desired targets also calculate the loss
         loss = None
-        accuracy = None
+        # accuracy = None
         # (B, 32*32, 512)
         # (B, 32*32)
         # print(logits.shape)
@@ -260,19 +260,19 @@ class GPT(nn.Module):
                 masks = masks.view(-1)
                 loss1 *= (1-masks)
 
-                target_cls_tmp = target_cls.view(-1)
-                error = final_cls - target_cls_tmp
-                correct_num = (error == 0).sum()
-                accuracy = correct_num / final_cls.shape[0]
-                loss2 = F.cross_entropy(cls.view(-1, cls.size(-1)), target_cls, reduce=False)
+                # target_cls_tmp = target_cls.view(-1)
+                # error = final_cls - target_cls_tmp
+                # correct_num = (error == 0).sum()
+                # accuracy = correct_num / final_cls.shape[0]
+                # loss2 = F.cross_entropy(cls.view(-1, cls.size(-1)), target_cls, reduce=False)
                 if not self.config.dynamic_weight:
                     loss1 = torch.mean(loss1)
-                    loss2 = torch.mean(loss2)
+                    # loss2 = torch.mean(loss2)
                 else:
                     loss1 = torch.sum(loss1) / torch.sum(masks)
-                    loss2 = torch.sum(loss2) / torch.sum(masks)
-                loss = loss1 + loss2
+                    # loss2 = torch.sum(loss2) / torch.sum(masks)
+                loss = loss1
 
             # else:
             #     loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
-        return logits, loss, accuracy, final_cls
+        return logits, loss
