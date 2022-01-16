@@ -151,7 +151,7 @@ if __name__=='__main__':
                 # a_tensor *= (1 - b_tensor)
 
                 if opts.sample_all:
-                    pixels, cls = sample_mask_all(IGPT_model, context=a_tensor.long(), length=opts.image_size * opts.image_size,
+                    pixels = sample_mask_all(IGPT_model, context=a_tensor.long(), length=opts.image_size * opts.image_size,
                                              num_sample=n_samples, top_k=opts.top_k, mask=b_tensor,
                                              no_bar=opts.no_progressive_bar)
                 else:
