@@ -67,14 +67,14 @@ def test(epoch_str='best.pth'):
             x = x.reshape(1, 1, opts.image_size, opts.image_size).cuda()
             mask = mask.reshape(1, 1, opts.image_size, opts.image_size).cuda()
             masked = masked.reshape(1, 1, opts.image_size, opts.image_size).cuda()
-            image_name = img_name + '_m' + mask_name[-6:-4]
+            image_name = img_name[:-4] + '_m' + mask_name[-6:-4]
 
             target_list.append(int(image_url[-6:-4]))
 
             _, _, _, cls = IGPT_model(masked)
 
             cls_list.append(cls.cpu())
-            dic[image_name] = cls.cpu()
+            dic[image_name] = int(cls.cpu())
 
             # current_url = os.path.join(opts.save_url, opts.name)
             # os.makedirs(current_url, exist_ok=True)
