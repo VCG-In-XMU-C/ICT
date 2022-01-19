@@ -103,21 +103,21 @@ class Trainer:
             loader = train_loader if is_train else test_loader
 
             losses = []
-            accuracys = []
+            # accuracys = []
             scaler = GradScaler()
             for it, (x, y, _, cls) in enumerate(loader):
 
                 # place data on the correct device
                 x = x.to(self.device)
-                # y = y.to(self.device)
-                cls = cls.to(self.device)
+                y = y.to(self.device)
+                # cls = cls.to(self.device)
 
                 # forward the model
                 if self.config.AMP:  # use AMP
                     with autocast():
                         with torch.set_grad_enabled(is_train):
                             if self.config.BERT:
-                                logits, loss = model(x, cls)
+                                logits, loss = model(x, y)
                             # else:
                             #     logits, loss = model(x, y)
                             loss = loss.mean()  # collapse all losses if they are scattered on multiple gpus
@@ -125,11 +125,11 @@ class Trainer:
                 else:
                     with torch.set_grad_enabled(is_train):
                         if self.config.BERT:
-                            logits, loss, accuracy, _ = model(x, cls)
+                            logits, loss = model(x, y)
                         # else:
                         #     logits, loss = model(x, y)
                         loss = loss.mean()  # collapse all losses if they are scattered on multiple gpus
-                        accuracys.append(accuracy.cpu())
+                        # accuracys.append(accuracy.cpu())
                         losses.append(loss.item())
 
                 if is_train:
@@ -175,14 +175,14 @@ class Trainer:
                     # print(loss)
                     if it % self.config.print_freq == 0:
                         print(f"epoch {epoch + 1} iter {it}: train loss {torch.mean(loss).item():.5f} "
-                              f"accuracy {accuracy:.1f} lr {lr:e}")
+                              f"lr {lr:e}")
                         # print(epoch+1, it, ':', loss.item(), accuracy, lr)
 
             if not is_train:
                 test_loss = float(np.mean(losses))
-                avg_accuracy = float(np.mean(accuracys))
+                # avg_accuracy = float(np.mean(accuracys))
                 logger.info("test loss: %f", test_loss)
-                return test_loss, avg_accuracy
+                return test_loss
 
         if loaded_ckpt is None:
             self.tokens = 0  # counter used for learning rate decay
@@ -199,10 +199,10 @@ class Trainer:
             epoch_start = time.time()
             run_epoch('train')
             if self.test_dataset is not None:
-                test_loss, accuracy = run_epoch('test')
+                test_loss = run_epoch('test')
 
-            print("Epoch: %d, test loss: %f, accuracy: %f, time for one epoch: "
-                  "%d seconds" % (epoch, test_loss, accuracy, time.time() - epoch_start))
+            print("Epoch: %d, test loss: %f, time for one epoch: "
+                  "%d seconds" % (epoch, test_loss, time.time() - epoch_start))
             # supports early stopping based on the test loss, or just save always if no test set is provided
             good_model = self.test_dataset is None or test_loss < best_loss
             if self.config.ckpt_path is not None and good_model:

@@ -49,8 +49,8 @@ def test(epoch_str='best.pth'):
     normalize = transforms.Normalize((0.5,), (0.5,))
 
     dic = dict()
-    cls_list = []
-    target_list = []
+    # cls_list = []
+    # target_list = []
     for img_name in img_list:
         for mask_name in mask_list:
             image_url = os.path.join(opts.image_url, img_name)
@@ -69,27 +69,27 @@ def test(epoch_str='best.pth'):
             masked = masked.reshape(1, 1, opts.image_size, opts.image_size).cuda()
             image_name = img_name[:-4] + '_m' + mask_name[-6:-4]
 
-            target_list.append(int(image_url[-6:-4]))
+            # target_list.append(int(image_url[-6:-4]))
 
-            _, _, _, cls = IGPT_model(masked)
+            fake, loss = IGPT_model(masked, x)
 
-            cls_list.append(cls.cpu())
-            dic[image_name] = int(cls.cpu())
+            # cls_list.append(cls.cpu())
+            # dic[image_name] = int(cls.cpu())
 
-            # current_url = os.path.join(opts.save_url, opts.name)
-            # os.makedirs(current_url, exist_ok=True)
-            # prefix = img_name.replace('png', '')
-            # suffix = mask_name.replace('png', '')
-            # path_str = current_url + '/' + prefix + '_' + suffix + '_'
+            current_url = os.path.join(opts.save_url, opts.name)
+            os.makedirs(current_url, exist_ok=True)
+            prefix = img_name.replace('png', '')
+            suffix = mask_name.replace('png', '')
+            path_str = current_url + '/' + prefix + '_' + suffix + '_'
             #
-            # im_fake = util.tensor2im(fake)
-            # im_masked = util.tensor2im(masked)
-            # im_x = util.tensor2im(x)
-            # im_mask = util.tensor2im(mask)
-            # util.save_image(im_fake, path_str + 'im_fake.png', aspect_ratio=1)
-            # util.save_image(im_masked, path_str + 'im_input.png', aspect_ratio=1)
-            # util.save_image(im_x, path_str + 'im_gt.png', aspect_ratio=1)
-            # util.save_image(im_mask, path_str + 'im_mask.png', aspect_ratio=1)
+            im_fake = util.tensor2im(fake)
+            im_masked = util.tensor2im(masked)
+            im_x = util.tensor2im(x)
+            im_mask = util.tensor2im(mask)
+            util.save_image(im_fake, path_str + 'im_fake.png', aspect_ratio=1)
+            util.save_image(im_masked, path_str + 'im_input.png', aspect_ratio=1)
+            util.save_image(im_x, path_str + 'im_gt.png', aspect_ratio=1)
+            util.save_image(im_mask, path_str + 'im_mask.png', aspect_ratio=1)
 
             # for i in range(n_samples):
             #
@@ -100,23 +100,23 @@ def test(epoch_str='best.pth'):
             #     tmp.save(os.path.join(current_url,img_name))
             print("Finish %s" % img_name)
 
-    cls_path = os.path.join(opts.save_url, opts.name)
-    sub = np.subtract(cls_list, target_list)
-    sub = (sub == 0)
-    accuracy = sub.sum() / len(cls_list)
+    # cls_path = os.path.join(opts.save_url, opts.name)
+    # sub = np.subtract(cls_list, target_list)
+    # sub = (sub == 0)
+    # accuracy = sub.sum() / len(cls_list)
+    #
+    # os.makedirs(cls_path, exist_ok=True)
+    # result_dir = os.path.join(cls_path, 'result.txt')
+    # result_str = 'In epoch %s, accuracy = %f' % (epoch_str, accuracy)
+    # print(result_str)
+    # save_result(result_dir, result_str)
 
-    os.makedirs(cls_path, exist_ok=True)
-    result_dir = os.path.join(cls_path, 'result.txt')
-    result_str = 'In epoch %s, accuracy = %f' % (epoch_str, accuracy)
-    print(result_str)
-    save_result(result_dir, result_str)
-
-    dic_dir = os.path.join(cls_path, 'dic.npy')
-    np.save(dic_dir, dic)
+    # dic_dir = os.path.join(cls_path, 'dic.npy')
+    # np.save(dic_dir, dic)
 
     e_time = time.time()
     print("This test totally costs %.5f seconds" % (e_time - s_time))
-    return accuracy
+    # return accuracy
 
 
 def save_result(path, result):
@@ -131,11 +131,11 @@ if __name__ == '__main__':
     parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
     parser.add_argument('--GPU_ids', type=str, default='0')
     parser.add_argument('--gpus', type=str, default=[0, 1])
-    parser.add_argument('--ckpt_path', type=str, default='/mnt/datadisk0/Transformer/')
+    parser.add_argument('--ckpt_path', type=str, default='/media/ming-t/F83438063437C702/will/Transformer/')
     parser.add_argument('--BERT', action='store_true', help='BERT model, Image Completion')
-    parser.add_argument('--image_url', type=str, default='/mnt/datadisk0/final/test/images/',
+    parser.add_argument('--image_url', type=str, default='/media/ming-t/F83438063437C702/will/final/test/images/',
                         help='the folder of image')
-    parser.add_argument('--mask_url', type=str, default='/mnt/datadisk0/final/test/masks/',
+    parser.add_argument('--mask_url', type=str, default='/media/ming-t/F83438063437C702/will/final/test/masks/',
                         help='the folder of mask')
     parser.add_argument('--top_k', type=int, default=20)
 
@@ -172,7 +172,8 @@ if __name__ == '__main__':
 
     best = 0
     best_index = 0
-    test(str(75)+'.pth')
+    # test(str(75)+'.pth')
+    test()
     # for i in range(100):
     #     print('current best score is:', str(best))
     #     r = test(str(i)+'.pth')
