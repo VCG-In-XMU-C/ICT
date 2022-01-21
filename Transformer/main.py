@@ -66,17 +66,17 @@ if __name__ == '__main__':
     parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
     parser.add_argument('--gpus', type=str, default=[0, 1])
     parser.add_argument('--gpu', type=str, default='cuda:0')
-    parser.add_argument('--ckpt_path', type=str, default='/media/ming-t/F83438063437C702/will/Transformer/')
-    parser.add_argument('--data_path', type=str, default='/media/ming-t/F83438063437C702/will/final/train/images/',
+    parser.add_argument('--ckpt_path', type=str, default='F:/Transformer/')
+    parser.add_argument('--data_path', type=str, default='C:/data/final/train/images/',
                         help='Indicate where is the training set')
-    parser.add_argument('--mask_path', type=str, default='/media/ming-t/F83438063437C702/will/final/train/masks/')
+    parser.add_argument('--mask_path', type=str, default='C:/data/final/train/masks/')
     parser.add_argument('--BERT', action='store_true', help='Use bert objective to train')
     parser.add_argument('--ImageNet', action='store_true', help='Training with ImageNet')
     parser.add_argument('--batch_size', type=int, default=1, help='16*8 maybe suitable for V100')
     parser.add_argument('--train_epoch', type=int, default=80, help='how many epochs')
     parser.add_argument('--print_freq', type=int, default=200, help='While training, the freq of printing log')
 
-    parser.add_argument('--validation_path', type=str, default='/media/ming-t/F83438063437C702/will/final/test/images/',
+    parser.add_argument('--validation_path', type=str, default='C:/data/final/test/images/',
                         help='where is the validation set of ImageNet')
 
     parser.add_argument('--image_size', type=int, default=256, help='input sequence length = image_size*image_size')
