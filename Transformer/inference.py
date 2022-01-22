@@ -78,14 +78,20 @@ def test(epoch_str='best.pth'):
 
             current_url = os.path.join(opts.save_url, opts.name)
             os.makedirs(current_url, exist_ok=True)
-            prefix = img_name.replace('png', '')
-            suffix = mask_name.replace('png', '')
+            prefix = img_name.replace('.png', '')
+            suffix = mask_name.replace('.png', '')
             path_str = current_url + '/' + prefix + '_' + suffix + '_'
             #
             im_fake = util.tensor2im(fake)
             im_masked = util.tensor2im(masked)
             im_x = util.tensor2im(x)
             im_mask = util.tensor2im(mask)
+
+            anchor_url = os.path.join(current_url, 'anchors')
+            os.makedirs(anchor_url, exist_ok=True)
+
+            util.save_image(im_fake, anchor_url + '/' + prefix + '_' + suffix + '_' + '.png', aspect_ratio=1)
+
             util.save_image(im_fake, path_str + 'im_fake.png', aspect_ratio=1)
             util.save_image(im_masked, path_str + 'im_input.png', aspect_ratio=1)
             util.save_image(im_x, path_str + 'im_gt.png', aspect_ratio=1)
