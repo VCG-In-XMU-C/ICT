@@ -309,4 +309,4 @@ class GPT(nn.Module):
             loss = F.cross_entropy(cls.view(-1, cls.size(-1)), target_cls, reduce=False)
             loss = torch.mean(loss)
 
-        return logits, loss, accuracy, final_cls
+        return logits, loss, accuracy, final_cls, cls
