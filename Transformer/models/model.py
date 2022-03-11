@@ -227,6 +227,8 @@ class GPT(nn.Module):
 
     def forward(self, input_image, targets=None):
         # print(input_image.shape)
+        input_flip = torch.flip(input_image, [3])
+        # print(input_image.shape)
         # print(targets.shape)
         # shape of input image: b, 1, 256, 256
         device = input_image.device
@@ -283,7 +285,8 @@ class GPT(nn.Module):
         fake = fake.type(torch.float32)
         # shape of logits: b * 16, 4096
         fake = rearrange(fake, '(b h w) (p1 p2) -> b 1 (h p1) (w p2)', w=4, h=4, p1=64)
-        final_fake = fake + input_image
+        mirror_image = (input_image + input_flip)/2
+        final_fake = fake + mirror_image
 
         # if we are given some desired targets also calculate the loss
         loss = None
@@ -312,6 +315,6 @@ class GPT(nn.Module):
             # loss = F.cross_entropy(cls.view(-1, cls.size(-1)), target_cls, reduce=False)
             loss = torch.mean(loss)
 
-        images = [input_image.cpu(), fake.cpu(), final_fake.cpu()]
-        image_names = ['input', 'fake', 'final_fake']
+        images = [input_image.cpu(), fake.cpu(), final_fake.cpu(), mirror_image.cpu(), input_flip.cpu()]
+        image_names = ['input', 'fake', 'final_fake', 'mirror', 'flip']
         return final_fake, loss, images, image_names
