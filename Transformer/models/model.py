@@ -141,7 +141,7 @@ class GPT(nn.Module):
         #     self.sos = torch.nn.Parameter(torch.zeros(config.n_embd))
         #     nn.init.normal_(self.sos)
         # self.sos = torch.nn.Parameter(torch.zeros(config.n_embd))
-        self.NUM_PCA_COMPONENTS = 256
+        self.NUM_PCA_COMPONENTS = 512
 
         # input embedding stem
         self.tok_emb = nn.Linear(self.NUM_PCA_COMPONENTS, config.n_embd, bias=False)
@@ -311,4 +311,6 @@ class GPT(nn.Module):
             # loss = F.cross_entropy(cls.view(-1, cls.size(-1)), target_cls, reduce=False)
             loss = torch.mean(loss)
 
-        return fake, loss
+        images = [input_image.cpu(), fake.cpu()]
+        image_names = ['input', 'fake']
+        return fake, loss, images, image_names

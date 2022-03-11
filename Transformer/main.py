@@ -66,7 +66,7 @@ if __name__ == '__main__':
     parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
     parser.add_argument('--gpus', type=str, default=[0, 1])
     parser.add_argument('--gpu', type=str, default='cuda:0')
-    parser.add_argument('--ckpt_path', type=str, default='F:/Transformer/')
+    parser.add_argument('--ckpt_path', type=str, default='./ckpts')
     parser.add_argument('--data_path', type=str, default='C:/data/final/train/images/',
                         help='Indicate where is the training set')
     parser.add_argument('--mask_path', type=str, default='C:/data/final/train/masks/')

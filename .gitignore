@@ -2,3 +2,8 @@
 *.xml
 .idea/*
 *.iml
+*.pyc
+*.m
+*.m
+*.png
+*.pth

@@ -17,6 +17,8 @@ import torch.multiprocessing as mp
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn import DataParallel
 from torch.cuda.amp import autocast, GradScaler
+import cv2
+from utils import util
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +51,13 @@ class Trainer:
         self.config = config
         self.device = gpu
         self.model = model.cuda(gpu)
+
+    def save_visual(self, imgs, names, epoch=-1):
+        assert len(imgs) == len(names)
+        for i in range(len(imgs)):
+            surfix = '_'+str(epoch) if epoch != -1 else ''
+            tmp = util.tensor2im(imgs[i])
+            cv2.imwrite(os.path.join('./vis', names[i]+surfix+'.png'), tmp)
 
     def save_checkpoint(self, epoch, optim, tokens, validation_loss, save_name):
         raw_model = self.model.module if hasattr(self.model, "module") else self.model
@@ -123,9 +132,10 @@ class Trainer:
                             loss = loss.mean()  # collapse all losses if they are scattered on multiple gpus
                             losses.append(loss.item())
                 else:
+                    # 如果没有显式指定AMP 就会走这个分支
                     with torch.set_grad_enabled(is_train):
                         if self.config.BERT:
-                            logits, loss = model(x, y)
+                            logits, loss, imgs, names = model(x, y)
                         # else:
                         #     logits, loss = model(x, y)
                         loss = loss.mean()  # collapse all losses if they are scattered on multiple gpus
@@ -176,13 +186,13 @@ class Trainer:
                     if it % self.config.print_freq == 0:
                         print(f"epoch {epoch + 1} iter {it}: train loss {torch.mean(loss).item():.5f} "
                               f"lr {lr:e}")
+                        self.save_visual(imgs, names)
                         # print(epoch+1, it, ':', loss.item(), accuracy, lr)
-
             if not is_train:
                 test_loss = float(np.mean(losses))
                 # avg_accuracy = float(np.mean(accuracys))
                 logger.info("test loss: %f", test_loss)
-                return test_loss
+                return test_loss, imgs, names
 
         if loaded_ckpt is None:
             self.tokens = 0  # counter used for learning rate decay
@@ -199,7 +209,7 @@ class Trainer:
             epoch_start = time.time()
             run_epoch('train')
             if self.test_dataset is not None:
-                test_loss = run_epoch('test')
+                test_loss, imgs, names = run_epoch('test')
 
             print("Epoch: %d, test loss: %f, time for one epoch: "
                   "%d seconds" % (epoch, test_loss, time.time() - epoch_start))
@@ -211,6 +221,7 @@ class Trainer:
                 self.save_checkpoint(epoch, optimizer, self.tokens, best_loss, save_name='best')
 
             if not np.isnan(test_loss):
+                self.save_visual(imgs, names, epoch)
                 self.save_checkpoint(epoch, optimizer, self.tokens, best_loss, save_name=str(epoch))
                 self.save_checkpoint(epoch, optimizer, self.tokens, best_loss, save_name='latest')
             else:
