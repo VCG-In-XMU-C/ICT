@@ -56,8 +56,9 @@ class Trainer:
         assert len(imgs) == len(names)
         for i in range(len(imgs)):
             surfix = '_'+str(epoch) if epoch != -1 else ''
+            prefix = 'vis_' if epoch == -1 else ''
             tmp = util.tensor2im(imgs[i])
-            cv2.imwrite(os.path.join('./vis', names[i]+surfix+'.png'), tmp)
+            cv2.imwrite(os.path.join('./vis', prefix+names[i]+surfix+'.png'), tmp)
 
     def save_checkpoint(self, epoch, optim, tokens, validation_loss, save_name):
         raw_model = self.model.module if hasattr(self.model, "module") else self.model

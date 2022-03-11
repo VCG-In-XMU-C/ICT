@@ -283,6 +283,7 @@ class GPT(nn.Module):
         fake = fake.type(torch.float32)
         # shape of logits: b * 16, 4096
         fake = rearrange(fake, '(b h w) (p1 p2) -> b 1 (h p1) (w p2)', w=4, h=4, p1=64)
+        final_fake = fake + input_image
 
         # if we are given some desired targets also calculate the loss
         loss = None
@@ -303,7 +304,7 @@ class GPT(nn.Module):
             #         loss = torch.sum(loss) / torch.sum(masks)
             # else:
             # loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
-            loss = self.criterionL1(fake, targets)
+            loss = self.criterionL1(final_fake, targets)
             # target_cls_tmp = target_cls.view(-1)
             # error = final_cls - target_cls_tmp
             # correct_num = (error == 0).sum()
@@ -311,6 +312,6 @@ class GPT(nn.Module):
             # loss = F.cross_entropy(cls.view(-1, cls.size(-1)), target_cls, reduce=False)
             loss = torch.mean(loss)
 
-        images = [input_image.cpu(), fake.cpu()]
-        image_names = ['input', 'fake']
-        return fake, loss, images, image_names
+        images = [input_image.cpu(), fake.cpu(), final_fake.cpu()]
+        image_names = ['input', 'fake', 'final_fake']
+        return final_fake, loss, images, image_names
