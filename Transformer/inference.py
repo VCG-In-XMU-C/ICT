@@ -71,7 +71,7 @@ def test(epoch_str='best.pth'):
 
             # target_list.append(int(image_url[-6:-4]))
 
-            fake, loss = IGPT_model(masked, x)
+            fake, loss, _, _ = IGPT_model(masked, x)
 
             # cls_list.append(cls.cpu())
             # dic[image_name] = int(cls.cpu())
@@ -137,7 +137,7 @@ if __name__ == '__main__':
     parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
     parser.add_argument('--GPU_ids', type=str, default='0')
     parser.add_argument('--gpus', type=str, default=[0, 1])
-    parser.add_argument('--ckpt_path', type=str, default='F:/Transformer/')
+    parser.add_argument('--ckpt_path', type=str, default='./ckpts')
     parser.add_argument('--BERT', action='store_true', help='BERT model, Image Completion')
     parser.add_argument('--image_url', type=str, default='C:/data/final/test/images/',
                         help='the folder of image')
