@@ -27,3 +27,6 @@ python main.py --name pca_classifier5 --train_epoch 100 --BERT --batch_size 32 -
 
 pca_recon -- use pca to recon, 1 bs
 python main.py --name pca_recon --train_epoch 100 --BERT --batch_size 1 --GELU_2
+
+pca_recon2 -- use pca to recon, 64 bs(G blurred result)
+python main.py --name pca_recon2 --train_epoch 100 --BERT --batch_size 64 --GELU_2
