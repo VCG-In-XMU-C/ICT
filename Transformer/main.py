@@ -66,17 +66,17 @@ if __name__ == '__main__':
     parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
     parser.add_argument('--gpus', type=str, default=[0, 1])
     parser.add_argument('--gpu', type=str, default='cuda:0')
-    parser.add_argument('--ckpt_path', type=str, default='/mnt/datadisk0/Transformer/')
-    parser.add_argument('--data_path', type=str, default='/mnt/datadisk0/final/train/images/',
+    parser.add_argument('--ckpt_path', type=str, default='./ckpts/')
+    parser.add_argument('--data_path', type=str, default='C:/data/final/train/images/',
                         help='Indicate where is the training set')
-    parser.add_argument('--mask_path', type=str, default='/mnt/datadisk0/final/train/masks/')
+    parser.add_argument('--mask_path', type=str, default='C:/data/final/train/masks/')
     parser.add_argument('--BERT', action='store_true', help='Use bert objective to train')
     parser.add_argument('--ImageNet', action='store_true', help='Training with ImageNet')
     parser.add_argument('--batch_size', type=int, default=1, help='16*8 maybe suitable for V100')
     parser.add_argument('--train_epoch', type=int, default=80, help='how many epochs')
     parser.add_argument('--print_freq', type=int, default=200, help='While training, the freq of printing log')
 
-    parser.add_argument('--validation_path', type=str, default='/mnt/datadisk0/final/test/images/',
+    parser.add_argument('--validation_path', type=str, default='C:/data/final/test/images/',
                         help='where is the validation set of ImageNet')
 
     parser.add_argument('--image_size', type=int, default=256, help='input sequence length = image_size*image_size')
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     # Define the size of transformer
     parser.add_argument('--n_layer', type=int, default=14)
     parser.add_argument('--n_head', type=int, default=8)
-    parser.add_argument('--n_embd', type=int, default=512)
+    parser.add_argument('--n_embd', type=int, default=1024)
     parser.add_argument('--lr', type=float, default=2e-4)
     parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
 

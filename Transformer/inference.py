@@ -131,11 +131,11 @@ if __name__ == '__main__':
     parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
     parser.add_argument('--GPU_ids', type=str, default='0')
     parser.add_argument('--gpus', type=str, default=[0, 1])
-    parser.add_argument('--ckpt_path', type=str, default='/mnt/datadisk0/Transformer/')
+    parser.add_argument('--ckpt_path', type=str, default='./ckpts/')
     parser.add_argument('--BERT', action='store_true', help='BERT model, Image Completion')
-    parser.add_argument('--image_url', type=str, default='/mnt/datadisk0/final/test/images/',
+    parser.add_argument('--image_url', type=str, default='C:/data/final/test/images/',
                         help='the folder of image')
-    parser.add_argument('--mask_url', type=str, default='/mnt/datadisk0/final/test/masks/',
+    parser.add_argument('--mask_url', type=str, default='C:/data/final/test/masks/',
                         help='the folder of mask')
     parser.add_argument('--top_k', type=int, default=20)
 
@@ -143,7 +143,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--n_layer', type=int, default=14)
     parser.add_argument('--n_head', type=int, default=8)
-    parser.add_argument('--n_embd', type=int, default=512)
+    parser.add_argument('--n_embd', type=int, default=1024)
     parser.add_argument('--GELU_2', action='store_true', help='use the new activation function')
 
     parser.add_argument('--save_url', type=str, default='./results/', help='save the output results')
@@ -170,18 +170,18 @@ if __name__ == '__main__':
                              attn_pdrop=0.0, n_layer=opts.n_layer, n_head=opts.n_head,
                              n_embd=opts.n_embd, BERT=opts.BERT, use_gelu2=opts.GELU_2, class_size=opts.class_size)
 
+    # test(str(75)+'.pth')
     best = 0
     best_index = 0
-    test(str(75)+'.pth')
-    # for i in range(100):
-    #     print('current best score is:', str(best))
-    #     r = test(str(i)+'.pth')
-    #     if r > best:
-    #         best = r
-    #         best_index = i
-    #
-    #         cls_path = os.path.join(opts.save_url, opts.name)
-    #         os.makedirs(cls_path, exist_ok=True)
-    #         result_dir = os.path.join(cls_path, 'final_result.txt')
-    #         result_str = 'In epoch %d, best accuracy = %f' % (best_index, best)
-    #         save_result(result_dir, result_str)
+    for i in range(100):
+        print('current best score is:', str(best))
+        r = test(str(i)+'.pth')
+        if r > best:
+            best = r
+            best_index = i
+
+            cls_path = os.path.join(opts.save_url, opts.name)
+            os.makedirs(cls_path, exist_ok=True)
+            result_dir = os.path.join(cls_path, 'final_result.txt')
+            result_str = 'In epoch %d, best accuracy = %f' % (best_index, best)
+            save_result(result_dir, result_str)

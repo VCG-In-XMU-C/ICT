@@ -141,7 +141,7 @@ class GPT(nn.Module):
         #     self.sos = torch.nn.Parameter(torch.zeros(config.n_embd))
         #     nn.init.normal_(self.sos)
         self.sos = torch.nn.Parameter(torch.zeros(config.n_embd))
-        self.NUM_PCA_COMPONENTS = 256
+        self.NUM_PCA_COMPONENTS = 1024
 
         # input embedding stem
         self.tok_emb = nn.Linear(self.NUM_PCA_COMPONENTS, config.n_embd, bias=False)
@@ -164,7 +164,7 @@ class GPT(nn.Module):
 
         # self.criterionL1 = torch.nn.L1Loss()
 
-        self.pca_model = joblib.load('./pca_%d.m' % self.NUM_PCA_COMPONENTS)  # load trained pca model
+        self.pca_model = joblib.load('./m_pca_%d.m' % self.NUM_PCA_COMPONENTS)  # load trained pca model
         self.pca_components = torch.from_numpy(self.pca_model.components_).cuda()
         self.pca_mean = torch.from_numpy(self.pca_model.mean_).cuda()
         self.pca_inverse = self.pca_components.T.cuda()
