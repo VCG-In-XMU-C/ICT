@@ -269,7 +269,6 @@ class GPT(nn.Module):
         x = self.ln_f(x)
         logits = self.head(x[:,1:,:])
         cls = self.cls(x[:, 0, :])
-        softmax_cls = F.softmax(cls)
         final_cls = cls.argmax(dim=1).view(-1)
         loss = None
         accuracy = None
@@ -310,4 +309,4 @@ class GPT(nn.Module):
             loss = F.cross_entropy(cls.view(-1, cls.size(-1)), target_cls, reduce=False)
             loss = torch.mean(loss)
 
-        return softmax_cls, loss, accuracy, final_cls, cls
+        return logits, loss, accuracy, final_cls, cls

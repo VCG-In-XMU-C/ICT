@@ -17,27 +17,27 @@ import time
 import torchvision.transforms as transforms
 
 
-# def FindList4MaxNum(ls):  # 快速获取list中最大的三个元素
-#     r = []
-#     for i in ls:
-#         max1, max2, max3, max4 = None, None, None, None
-#         for num in range(len(i)):
-#             if max1 is None or i[num] > i[max1]:
-#                 max1, num = num, max1
-#             if num is None:
-#                 continue
-#             if max2 is None or i[num] > i[max2]:
-#                 max2, num = num, max2
-#             if num is None:
-#                 continue
-#             if max3 is None or i[num] > i[max3]:
-#                 max3, num = num, max3
-#             if num is None:
-#                 continue
-#             if max4 is None or i[num] > i[max4]:
-#                 max4 = num
-#         r.append([max1, max2, max3, max4])
-#     return r
+def FindList4MaxNum(ls):  # 快速获取list中最大的三个元素
+    r = []
+    for i in ls:
+        max1, max2, max3, max4 = None, None, None, None
+        for num in range(len(i)):
+            if max1 is None or i[num] > i[max1]:
+                max1, num = num, max1
+            if num is None:
+                continue
+            if max2 is None or i[num] > i[max2]:
+                max2, num = num, max2
+            if num is None:
+                continue
+            if max3 is None or i[num] > i[max3]:
+                max3, num = num, max3
+            if num is None:
+                continue
+            if max4 is None or i[num] > i[max4]:
+                max4 = num
+        r.append([max1, max2, max3, max4])
+    return r
 
 
 def test(epoch_str='best.pth'):
@@ -94,8 +94,8 @@ def test(epoch_str='best.pth'):
 
             target_list.append(int(image_url[-6:-4]))
 
-            logits, _, _, cls, raw_cls = IGPT_model(masked)
-            r = logits[0].detach().cpu()
+            _, _, _, cls, raw_cls = IGPT_model(masked)
+            r = FindList4MaxNum(raw_cls)[0]
 
             cls_list.append(cls.cpu())
             dic[image_name] = r
@@ -156,11 +156,11 @@ if __name__ == '__main__':
     parser.add_argument('--name', type=str, default='ICT', help='The name of this exp')
     parser.add_argument('--GPU_ids', type=str, default='0')
     parser.add_argument('--gpus', type=str, default=[0, 1])
-    parser.add_argument('--ckpt_path', type=str, default='./ckpts/')
+    parser.add_argument('--ckpt_path', type=str, default='/media/ming-t/F83438063437C702/will/Transformer/')
     parser.add_argument('--BERT', action='store_true', help='BERT model, Image Completion')
-    parser.add_argument('--image_url', type=str, default='/home/ming-t/will/final/test/images/',
+    parser.add_argument('--image_url', type=str, default='/media/ming-t/F83438063437C702/will/final/test/images/',
                         help='the folder of image')
-    parser.add_argument('--mask_url', type=str, default='/home/ming-t/will/final/test/masks/',
+    parser.add_argument('--mask_url', type=str, default='/media/ming-t/F83438063437C702/will/final/test/masks/',
                         help='the folder of mask')
     parser.add_argument('--top_k', type=int, default=20)
 
